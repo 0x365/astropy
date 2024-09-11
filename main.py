@@ -64,6 +64,7 @@ fig = plt.figure()
 all_params_plot = (all_params-np.nanmean(all_params,axis=0))/(3*np.nanstd(all_params,axis=0))
 plt.violinplot(all_params_plot, [0,1,2,3,4,5], showmeans=False, showextrema=False, showmedians=False)
 plt.ylim([-1,1])
+plt.xticks([0,1,2,3,4,5], ["ARGP", "ECC", "INC", "RAAN", "MA", "MM"])
 plt.savefig("test2.png")
 
 csv_output(save_location+"/start_params_real.csv", all_starts)

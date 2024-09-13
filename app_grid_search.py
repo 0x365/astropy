@@ -71,8 +71,8 @@ all_params_max = all_params_mean + 3*all_params_std
 ############## Get icmsd satellites
 
 
-satellites = get_icsmd_satellites(open_location+"/active.tle", "icsmd_sats.txt")
-# satellites = get_random_satellites(open_location+"/active.tle")
+# satellites = get_icsmd_satellites(open_location+"/active.tle", "icsmd_sats.txt")
+satellites = get_random_satellites(open_location+"/active.tle")
 
 
 ######## Determine satellites that could be useful in 4 participant consensus

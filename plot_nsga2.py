@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from common import *
 
-data = load_json("data-ga/pop50_gen20_nsga2.json")
+data = load_json("data-ga/pop50_gen50_nsga2.json")
 
 # data = data[1:]
 
@@ -14,7 +14,7 @@ print(np.shape(f))
 
 
 plt.scatter(f[-1,:,0], f[-1,:,1])
-plt.xlim([-0.1,0])
+# plt.xlim([,0])
 plt.ylim([0, 24*60*2])
 plt.savefig("figures/ga/non-dominated-solution.png")
 plt.clf()

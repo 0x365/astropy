@@ -10,7 +10,7 @@ def consensus(comm, small_grid):
     t_local = np.zeros(np.shape(small_grid)[0])
 
     # Iterate through communication rounds and process satellite pairs for each round
-    for _, conn_round in enumerate(comm):
+    for c, conn_round in enumerate(comm):
         t_local_next = t_local.copy()
         for i,j in conn_round:
             x = small_grid[i,j][small_grid[i,j] >= t_local[i]]
@@ -44,6 +44,52 @@ def fitness(sim_sat, satellites, possible, real_sat_grid, time):
     time_li = []
     for small_comb in possible:
         small_grid = big_grid[[0,*small_comb]][:,[0,*small_comb]]
+        comm =  [
+            [[0,1],[0,2],[0,3]],
+            [[1,0],[1,2],[1,3], [2,0],[2,1],[2,3], [3,0],[3,1],[3,2]],
+            [[0,1],[0,2],[0,3], [1,0],[1,2],[1,3], [2,0],[2,1],[2,3], [3,0],[3,1],[3,2]],
+            [[1,0],[2,0],[3,0]]
+        ]
+        completed, times = consensus(comm, small_grid)
+        if completed:
+            c += 1
+            time_li.append(times)
+    if c == 0:
+        time_li.append(0)
+    return c/len(possible), np.mean(time_li)
+
+
+
+# Function to evaluate the fitness of satellite communication by counting successful connections
+def fitness_multi_sat(sim_sats, satellites, possible, real_sat_grid, time):
+    
+    possible += len(sim_sats)
+
+    big_grid = np.zeros((len(satellites)+len(sim_sats), len(satellites)+len(sim_sats), len(time)))
+    big_grid[big_grid == 0] = np.nan
+    big_grid[len(sim_sats):,len(sim_sats):] = real_sat_grid
+
+    # Compare sim sats against each other
+    for j in range(len(sim_sats)):
+        for i in range(len(sim_sats)):
+            if i != j:
+                x = np.where((sim_sats[j].at(time) - sim_sats[i].at(time)).distance().km <= 500)[0]
+                if len(x) == 0:
+                    return -1, 0
+                big_grid[i,j,:len(x)] = x
+                big_grid[j,i,:len(x)] = x
+
+    # Compare sim sats against real sats
+    for j in range(len(sim_sats)):
+        for i in range(len(satellites)):
+            x = np.where((sim_sats[j].at(time) - satellites[i].at(time)).distance().km <= 500)[0]
+            big_grid[i+len(sim_sats),0,:len(x)] = x
+            big_grid[0,i+len(sim_sats),:len(x)] = x
+
+    c = 0
+    time_li = []
+    for small_comb in possible:
+        small_grid = big_grid[[*np.arange(len(sim_sats)),*small_comb]][:,[*np.arange(len(sim_sats)),*small_comb]]
         comm =  [
             [[0,1],[0,2],[0,3]],
             [[1,0],[1,2],[1,3], [2,0],[2,1],[2,3], [3,0],[3,1],[3,2]],

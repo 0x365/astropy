@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from common import *
 
-data = load_json("data-ga/1726233191.json")
+data = load_json("data-ga/0_completed.json")
 
 num_sim_sats = 2
 
@@ -35,7 +35,7 @@ print(np.shape(all_var))
 colors = plt.cm.viridis_r(np.linspace(0, 1, len(argp)))
 
 fig = plt.figure(figsize=(10,16), layout="tight")
-gs = plt.GridSpec(6, 3, height_ratios=[1, 1, 1, 1, 1, 2])
+gs = plt.GridSpec(6, 3, height_ratios=[1,1,1,1,1,1])
  
 for j in range(num_sim_sats):
     ax1 = fig.add_subplot(gs[j*2, 0])

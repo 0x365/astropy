@@ -29,48 +29,17 @@ if not os.path.exists(save_location):
     os.makedirs(save_location)
 
 
-
-ts = load.timescale()
-
-start_date = datetime.datetime(2024,9,11, tzinfo=utc)
-end_date = start_date + relativedelta(days=1)
-time_range = date_range(start_date, end_date, 30, 'seconds')
-time = ts.from_datetimes(time_range)
-epoch = (start_date - datetime.datetime(1949,12,31,0,0, tzinfo=utc))
-
-
-
-
-satellites = get_icsmd_satellites(open_location+"/active.tle", "icsmd_sats.txt")
-
-# REMOVE
-# satellites = satellites[:len(satellites)//4]
-
-
-
-
-
-
-
+num_start_days = 10
+pop_size = 50
+num_generations = 50
+num_sim_sats = 1
+number_of_replicas = 4
+run_mode = "completed" # "time"
 
 
 
 class MyProblem(Problem):
-    def __init__(self, num_sim_sats, possible, real_sat_grid, time, **kwargs):
-        # vars = {
-        #     "argp_i": Real(bounds=(-180, 180)),
-        #     "ecc_i": Real(bounds=(0, 0.14)),
-        #     "inc_i": Real(bounds=(-90, 90)),
-        #     "raan_i": Real(bounds=(-180, 180)),
-        #     "anom_i": Real(bounds=(-180, 180)),
-        #     "mot_i": Real(bounds=(4000, 6500)),
-        #     "argp_i_2": Real(bounds=(-180, 180)),
-        #     "ecc_i_2": Real(bounds=(0, 0.14)),
-        #     "inc_i_2": Real(bounds=(-90, 90)),
-        #     "raan_i_2": Real(bounds=(-180, 180)),
-        #     "anom_i_2": Real(bounds=(-180, 180)),
-        #     "mot_i_2": Real(bounds=(4000, 6500)),
-        # }
+    def __init__(self, num_sim_sats, possible, real_sat_grid, time, mode, b, **kwargs):
         vars = {}
         for i in range(num_sim_sats):
             vars.update({"argp_i_"+str(i): Real(bounds=(-180, 180))})
@@ -84,6 +53,8 @@ class MyProblem(Problem):
         self.real_sat_grid = real_sat_grid
         self.time = time
         self.num_sim_sats = num_sim_sats
+        self.mode = mode
+        self.b = b
 
     def _evaluate(self, x, out, *args, **kwargs):
         f1 = []
@@ -113,127 +84,140 @@ class MyProblem(Problem):
                     np.deg2rad(raan_i),         # nodeo: R.A. of ascending node (radians)
                 )
                 sim_sats.append(EarthSatellite.from_satrec(sim_sat, ts))
-            completed, _ = fitness_multi_sat(sim_sats, satellites, self.possible.copy(), self.real_sat_grid, self.time)
-            f1.append(-completed)
+            completed, time = fitness_multi_sat(sim_sats, satellites, self.possible.copy(), self.real_sat_grid, self.time, self.b)
+            if self.mode == "completed":
+                f1.append(-completed)
+            elif self.mode == "time":
+                f1.append(time)
+            else:
+                raise Exception("Mode not correctly defined")
         out["F"] = f1
 
 
 
+for start_day_added in range(num_start_days):
+
+    ts = load.timescale()
+
+    start_date = datetime.datetime(2024,9,11+start_day_added, tzinfo=utc)
+    end_date = start_date + relativedelta(days=1)
+    time_range = date_range(start_date, end_date, 30, 'seconds')
+    time = ts.from_datetimes(time_range)
+    epoch = (start_date - datetime.datetime(1949,12,31,0,0, tzinfo=utc))
+
+
+    satellites = get_icsmd_satellites(open_location+"/active.tle", "icsmd_sats.txt")
+
+    # REMOVE
+    # satellites = satellites[:len(satellites)//4]
 
 
 
-pop_size = 200
-num_generations = 20
-num_sim_sats = 2
-number_of_replicas = 4
+    ########## Get all valid combinations
 
-
-
-
-########## Get all valid combinations
-
-valid_combs = []
-valid_combs_time = []
-for i, x in enumerate(tqdm(satellites, desc="Building possible real satellite combinations")):
-    for j, y in enumerate(satellites):
-        if j > i:
-            barycentric = (x.at(time) - y.at(time)).distance().km
-            ans = np.where(barycentric <= 500)[0]
-            if len(ans) > 0:
-                valid_combs.append([i, j])
-                valid_combs_time.append(ans)
-
-valid_combs = np.array(valid_combs)       
-
-def checker(temp):
-    for i, x in enumerate(temp):
-        for j, y in enumerate(temp):
+    valid_combs = []
+    valid_combs_time = []
+    for i, x in enumerate(tqdm(satellites, desc="Building possible real satellite combinations")):
+        for j, y in enumerate(satellites):
             if j > i:
-                if not y in valid_combs[valid_combs[:,0] == x, 1]:
-                    return False
-    return True
+                barycentric = (x.at(time) - y.at(time)).distance().km
+                ans = np.where(barycentric <= 500)[0]
+                if len(ans) > 0:
+                    valid_combs.append([i, j])
+                    valid_combs_time.append(ans)
 
-possible = filter(checker, itertools.combinations(np.arange(0,np.amax(valid_combs)), number_of_replicas-num_sim_sats))
-possible = np.array(list(possible))
+    valid_combs = np.array(valid_combs)       
 
+    def checker(temp):
+        for i, x in enumerate(temp):
+            for j, y in enumerate(temp):
+                if j > i:
+                    if not y in valid_combs[valid_combs[:,0] == x, 1]:
+                        return False
+        return True
 
-
-######### Create real sat grid
-
-big_comb = np.array(satellites)
-
-real_sat_grid = np.zeros((len(big_comb), len(big_comb), len(time)))
-real_sat_grid[real_sat_grid == 0] = np.nan
-
-for i in tqdm(range(len(big_comb)), desc="Generate real satellite's interactions"):
-    for j in range(len(big_comb)):
-        if i != j:
-            x = np.where((big_comb[i].at(time) - big_comb[j].at(time)).distance().km <= 500)[0]
-            real_sat_grid[i,j,:len(x)] = x
-            real_sat_grid[j,i,:len(x)] = x
+    possible = filter(checker, itertools.combinations(np.arange(0,np.amax(valid_combs)), number_of_replicas-num_sim_sats))
+    possible = np.array(list(possible))
 
 
 
+    ######### Create real sat grid
 
-problem = MyProblem(num_sim_sats, possible, real_sat_grid, time)
+    big_comb = np.array(satellites)
 
-
-
-
-
-# Generate initial guess from a different satellite
-# barycentric = satellites[1].at(ts.from_datetime(start_date))
-# orb = osculating_elements_of(barycentric)
-
-X = {}
-for i in range(num_sim_sats):
-    barycentric = satellites[0].at(ts.from_datetime(start_date))
-    orb = osculating_elements_of(barycentric)   
-    X.update({"argp_i_"+str(i): orb.argument_of_periapsis.degrees})
-    X.update({"ecc_i_"+str(i): orb.eccentricity})
-    if i == 1:
-        X.update({"inc_i_"+str(i): -orb.inclination.degrees})
-    else:
-        X.update({"inc_i_"+str(i): orb.inclination.degrees})
-    X.update({"raan_i_"+str(i): orb.longitude_of_ascending_node.degrees})
-    X.update({"anom_i_"+str(i): orb.mean_anomaly.degrees})
-    X.update({"mot_i_"+str(i): orb.mean_motion_per_day.degrees})
+    real_sat_grid = np.zeros((len(big_comb), len(big_comb), len(time)))
+    real_sat_grid[real_sat_grid == 0] = np.nan
+    b = 0
+    for i in tqdm(range(len(big_comb)), desc="Generate real satellite's interactions"):
+        for j in range(len(big_comb)):
+            if i != j:
+                x = np.where((big_comb[i].at(time) - big_comb[j].at(time)).distance().km <= 500)[0]
+                if len(x) > b:
+                    b = len(x)
+                real_sat_grid[i,j,:len(x)] = x
+                real_sat_grid[j,i,:len(x)] = x
 
 
-pop = Population.new("X", [X])
-# Evaluator().eval(problem, pop)
+
+
+    problem = MyProblem(num_sim_sats, possible, real_sat_grid, time, run_mode, b)
 
 
 
 
 
+    # Generate initial guess from a different satellite
+    # barycentric = satellites[1].at(ts.from_datetime(start_date))
+    # orb = osculating_elements_of(barycentric)
+
+    X = {}
+    for i in range(num_sim_sats):
+        barycentric = satellites[0].at(ts.from_datetime(start_date))
+        orb = osculating_elements_of(barycentric)   
+        X.update({"argp_i_"+str(i): orb.argument_of_periapsis.degrees})
+        X.update({"ecc_i_"+str(i): orb.eccentricity})
+        if i == 1:
+            X.update({"inc_i_"+str(i): -orb.inclination.degrees})
+        else:
+            X.update({"inc_i_"+str(i): orb.inclination.degrees})
+        X.update({"raan_i_"+str(i): orb.longitude_of_ascending_node.degrees})
+        X.update({"anom_i_"+str(i): orb.mean_anomaly.degrees})
+        X.update({"mot_i_"+str(i): orb.mean_motion_per_day.degrees})
+
+    print(X)
+    pop = Population.new("X", [X])
+    Evaluator().eval(problem, pop)
 
 
 
 
-algorithm = MixedVariableGA(
-    pop_size=int(pop_size))#, sampling=pop)
 
-res = minimize(problem,
-               algorithm,
-               ("n_gen", int(num_generations)),
-               seed=1,
-               verbose=True,
-               save_history=True)
 
-print()
-print("------ RESULTS ------")
-print("Maximum consensus:", round(-res.F[0]*100,2), "%")
-print("Orbital Elements:",res.X)
 
-print()
+    algorithm = MixedVariableGA(
+        pop_size=int(pop_size), sampling=pop)
 
-out_data = []
-for i in range(len(res.history)):
-    out_data.append({
-        "gen": i,
-        "x": res.history[i].pop.get("X").tolist(),
-        "f": res.history[i].pop.get("F")[:,0].tolist()
-    })
+    res = minimize(problem,
+                algorithm,
+                ("n_gen", int(num_generations)),
+                seed=1,
+                verbose=True,
+                save_history=True)
 
-save_json("data-ga/"+str(round(datetime.datetime.now().timestamp()))+".json", out_data)
+    print()
+    print("------ RESULTS ------")
+    print("Maximum consensus:", round(-res.F[0]*100,2), "%")
+    print("Orbital Elements:",res.X)
+
+    print()
+
+    out_data = []
+    for i in range(len(res.history)):
+        out_data.append({
+            "gen": i,
+            "x": res.history[i].pop.get("X").tolist(),
+            "f": res.history[i].pop.get("F")[:,0].tolist()
+        })
+
+    # save_json("data-ga/"+str(round(datetime.datetime.now().timestamp()))+".json", out_data)
+    save_json("data-ga/"+str(start_day_added)+"_"+run_mode+".json", out_data)

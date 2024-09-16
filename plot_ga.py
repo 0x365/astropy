@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from common import *
 
-data = load_json("data-ga/pop50_gen50_icsmd.json")
+data = load_json("data-ga/1_completed.json")
 
 # data = data[1:]
 

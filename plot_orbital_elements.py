@@ -6,7 +6,7 @@ import itertools
 
 from common import *
 
-data_location = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+data_location = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data-icsmd-50")
 if not os.path.exists(data_location):
     raise Exception("Data does not exist")
 save_location = os.path.join(os.path.dirname(os.path.abspath(__file__)), "figures")
@@ -34,8 +34,9 @@ for comb in tqdm(list(combinati)):
 
 
     plt.figure(figsize=(10,10), layout="constrained")
-    plt.imshow(np.swapaxes(data,0,1), extent=extent, aspect="auto")
+    plt.imshow(np.swapaxes(data,0,1), extent=extent, aspect="auto", vmin=0)
     plt.xlabel(comb[0])
     plt.ylabel(comb[1])
+    plt.colorbar()
     plt.gca().invert_yaxis()
     plt.savefig(save_location+"/"+comb[0]+"_"+comb[1]+".png")

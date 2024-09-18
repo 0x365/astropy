@@ -65,9 +65,11 @@ ax.set_zlim(-50000, 50000)
 plt.savefig(save_location+"/orbit_map_of_all_sats.png")
 
 fig = plt.figure()
-all_params_plot = (all_params-np.nanmean(all_params,axis=0))/(3*np.nanstd(all_params,axis=0))
+# all_params_plot = (all_params-np.nanmean(all_params,axis=0))/(3*np.nanstd(all_params,axis=0))
+all_all_params = all_params
+all_params_plot = all_params/[360, np.amax(all_params[:,1]), 180, 360, 360, np.amax(all_params[:,5])]
 plt.violinplot(all_params_plot, [0,1,2,3,4,5], showmeans=False, showextrema=False, showmedians=False)
-plt.ylim([-1,1])
+# plt.ylim([-1,1])
 plt.xticks([0,1,2,3,4,5], ["ARGP", "ECC", "INC", "RAAN", "MA", "MM"])
 plt.savefig(save_location+"/orbital_elements_of_all_sats.png")
 
@@ -118,8 +120,87 @@ ax.set_zlim(-50000, 50000)
 plt.savefig(save_location+"/subgroup_orbit_map_of_all_sats.png")
 
 fig = plt.figure()
-all_params_plot = (all_params-np.nanmean(all_params,axis=0))/(3*np.nanstd(all_params,axis=0))
+# all_params_plot = (all_params-np.nanmean(all_params,axis=0))/(3*np.nanstd(all_params,axis=0))
+# all_params_plot = all_params/np.amax(all_params,axis=0)
+all_params_plot = all_params.copy()
+all_params_plot[:,1] = np.log10(all_params_plot[:,1])
+all_params_plot[:,1] = all_params_plot[:,1]+7
+all_params_plot = all_params_plot/[360, 7, 180, 360, 360, np.amax(all_params[:,5])]
+
 plt.violinplot(all_params_plot, [0,1,2,3,4,5], showmeans=False, showextrema=False, showmedians=False)
-plt.ylim([-1,1])
+
+def deg2rad(x):
+    return (x*7)-7
+
+def rad2deg(x):
+    return (x-7)/7
+
+secax = plt.gca().secondary_yaxis('right', functions=(deg2rad, rad2deg))
+secax.set_ylabel('Eccentricity Log10 Scale')
+
+target_points = [0.5,0.5,0.5,0.5,0.5,0.5]
+target_points_scaled = (target_points-np.nanmean(all_params,axis=0))/(3*np.nanstd(all_params,axis=0))
+# plt.scatter([0,1,2,3,4,5], target_points_scaled, label="GA Optimised Orbital Elements")
+# plt.ylim([-1,1])
+plt.title("Standard Score of Orbital Parameters in ICSMD Subset")
 plt.xticks([0,1,2,3,4,5], ["ARGP", "ECC", "INC", "RAAN", "MA", "MM"])
+plt.legend()
 plt.savefig(save_location+"/subgroup_orbital_elements_of_all_sats.png")
+plt.clf()
+
+
+
+
+
+
+
+
+
+data_all = []
+for i in range(10):
+    try:
+        data = load_json("data-ga/"+str(i)+"_completed.json")
+        data = data[1:]
+        data_all.append(data)
+    except:
+        break
+
+points_to_scatter = []
+for i in range(10):
+    try:
+        x = [xi["x"] for xi in data_all[i]]
+        f = [xi["f"] for xi in data_all[i]]
+    except:
+        continue
+    
+    best_coords_pos = np.argmin(f[-1])
+    # print(best_coords_pos)
+    X = x[-1][best_coords_pos]
+
+    points_to_scatter.append([X["argp_i"], np.log10(X["ecc_i"]), X["inc_i"], X["raan_i"], X["anom_i"], X["mot_i"]/(360)])
+
+points_to_scatter = np.array(points_to_scatter)
+
+fig, axs = plt.subplots(1,6, figsize=(10,5), layout="constrained")
+
+all_params[:,1] = np.log10(all_params[:,1]) # Log Eccentricity
+all_all_params[:,1] = np.log10(all_all_params[:,1]) # Log Eccentricity
+all_params[:,5] = all_params[:,5]/(360) # Log Eccentricity
+all_all_params[:,1] = all_all_params[:,1]/(360) # Log Eccentricity
+for i in range(6):
+    parts_all = axs[i].violinplot(all_all_params[:,i], [0], widths=1, showmeans=False, showextrema=False, showmedians=False)
+    parts_icsmd =  axs[i].violinplot(all_params[:,i], [0], widths=0.5, showmeans=False, showextrema=False, showmedians=False)
+    axs[i].scatter([0]*len(points_to_scatter), points_to_scatter[:,i], c="#D0A5C0", marker="x")
+    for pc in parts_all['bodies']:
+        pc.set_facecolor('#1E3231')
+        pc.set_alpha(0.2)
+    for pc in parts_icsmd['bodies']:
+        pc.set_facecolor('#1E3231')
+        pc.set_alpha(0.5)
+    axs[i].set_title(["ARGP", "ECC", "INC", "RAAN", "MA", "MM"][i])
+    axs[i].get_xaxis().set_visible(False)
+    axs[i].set_ylim([ [0,360],[-7,0],[0,180],[0,360],[0,360],[0,np.amax(all_params[:,5])]][i])
+
+
+plt.savefig(save_location+"/subgroup_orbital_elements_of_all_sats_split.png")
+plt.clf()

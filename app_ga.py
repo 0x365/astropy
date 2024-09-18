@@ -18,6 +18,9 @@ from pymoo.optimize import minimize
 from pymoo.core.evaluator import Evaluator
 from pymoo.core.population import Population
 
+import ctypes
+from array import array
+
 from common import *
 from ga_fitness import fitness
 
@@ -39,8 +42,17 @@ run_mode = "completed" # "time"
 os.system("go build -buildmode=c-shared -o ./go_fit.so .")
 
 
+def flatten_plus_one(real_sat_grid):
+    big_grid = np.zeros((len(real_sat_grid)+1, len(real_sat_grid)+1, len(time)))
+    big_grid[big_grid == 0] = -1
+    big_grid[1:,1:] = real_sat_grid
 
+    flat_grid = []
+    for i in range(np.shape(big_grid)[0]):
+        for j in range(np.shape(big_grid)[1]):
+            flat_grid.extend(big_grid[i,j])
 
+    return flat_grid
 
 class MyProblem(Problem):
     def __init__(self, possible, real_sat_grid, time, mode, **kwargs):
@@ -53,10 +65,15 @@ class MyProblem(Problem):
             "mot_i": Real(bounds=(4000, 6500)),
         }
         super().__init__(vars=vars, n_obj=1, **kwargs)
-        self.possible = possible
-        self.real_sat_grid = real_sat_grid
+        combs_arr = array('d', (possible+1).flatten().tolist())
+        combs_raw = (ctypes.c_double * len(combs_arr)).from_buffer(combs_arr)
+        self.possible = combs_raw
+        self.real_sat_grid_flat = np.array(flatten_plus_one(real_sat_grid), dtype=float)
+        # self.real_sat_grid = real_sat_grid
+        self.depth = np.shape(real_sat_grid)[2]
         self.time = time
         self.mode = mode
+
 
     def _evaluate(self, x, out, *args, **kwargs):
         f1 = []
@@ -85,11 +102,11 @@ class MyProblem(Problem):
                 np.deg2rad(raan_i),         # nodeo: R.A. of ascending node (radians)
             )
             sim_sat = EarthSatellite.from_satrec(satellite2, ts)
-            completed = fitness(sim_sat, satellites, self.possible.copy(), self.real_sat_grid, self.time)
+            completed, timer = fitness(sim_sat, satellites, self.possible, self.real_sat_grid_flat.copy(), self.depth, self.time)
             if self.mode == "completed":
                 f1.append(-completed)
             elif self.mode == "time":
-                f1.append(time)
+                f1.append(timer)
             else:
                 raise Exception("Mode not correctly defined")
         # f1 = np.squeeze(f1)
@@ -101,7 +118,7 @@ class MyProblem(Problem):
 for start_day_added in range(num_start_days):
     ts = load.timescale()
 
-    start_date = datetime.datetime(2024,9,11, tzinfo=utc)
+    start_date = datetime.datetime(2024,9,11+start_day_added, tzinfo=utc)
     end_date = start_date + relativedelta(days=1)
     time_range = date_range(start_date, end_date, 30, 'seconds')
     time = ts.from_datetimes(time_range)
@@ -177,6 +194,7 @@ for start_day_added in range(num_start_days):
         'anom_i': orb.mean_anomaly.degrees, 
         'mot_i': orb.mean_motion_per_day.degrees
     }
+
 
     pop = Population.new("X", [X])
     Evaluator().eval(problem, pop)

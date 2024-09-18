@@ -5,7 +5,7 @@ import numpy as np
 import os
 import ctypes
 from array import array
-
+from pytictoc import TicToc
 
 # Function to check consensus based on communication rounds and a grid of satellites
 def consensus(comm, small_grid):
@@ -28,64 +28,14 @@ def consensus(comm, small_grid):
 
     return True, np.amax(t_local)
 
-def flatten_3d_array(array_3d):
-    """
-    Flatten a 3D array into a 1D list.
-    
-    Parameters:
-    - array_3d: A 3D list (list of lists of lists).
-    
-    Returns:
-    - flat_list: A flattened 1D list of elements.
-    """
-    flat_list = []
-    array_3d = np.swapaxes(array_3d, 0, 1)
-    array_3d = np.swapaxes(array_3d, 1, 2)
-    # Flattening the 3D array
-    for depth in array_3d:
-        for row in depth:
-            flat_list.extend(row)  # Append the elements in each row to the flat list
-
-    return flat_list
 
 
 # Function to evaluate the fitness of satellite communication by counting successful connections
-def fitness(sim_sat, satellites, possible, real_sat_grid, time):
-    
-    possible += 1
+def fitness(sim_sat, satellites, possible, real_sat_grid, depth, time):
 
-    big_grid = np.zeros((len(satellites)+1, len(satellites)+1, len(time)))
-    big_grid[big_grid == 0] = -1
-    big_grid[1:,1:] = real_sat_grid
-
-    for i in range(len(satellites)):
-        x = np.where((sim_sat.at(time) - satellites[i].at(time)).distance().km <= 500)[0]
-        big_grid[i+1,0,:len(x)] = x
-        big_grid[0,i+1,:len(x)] = x
-
-
-    # print(np.shape(possible))
-
-    # c = 0
-    # time_li = []
-    # for small_comb in possible:
-    #     small_grid = big_grid[[0,*small_comb]][:,[0,*small_comb]]
-    #     comm =  [
-    #         [[0,1],[0,2],[0,3]],
-    #         [[1,0],[1,2],[1,3], [2,0],[2,1],[2,3], [3,0],[3,1],[3,2]],
-    #         [[0,1],[0,2],[0,3], [1,0],[1,2],[1,3], [2,0],[2,1],[2,3], [3,0],[3,1],[3,2]],
-    #         [[1,0],[2,0],[3,0]]
-    #     ]
-    #     completed, times = consensus(comm, small_grid)
-    #     if completed:
-    #         c += 1
-    #         time_li.append(times)
-    # if c == 0:
-    #     time_li.append(0)
-
-
+    Ticcer = TicToc()
+    # Ticcer.tic()
     library = ctypes.cdll.LoadLibrary("./go_fit.so")
-
     conn1 = library.consensus_completeness_per
     conn1.restype = ctypes.c_int64
 
@@ -96,71 +46,81 @@ def fitness(sim_sat, satellites, possible, real_sat_grid, time):
         ctypes.c_int64,
         ctypes.c_int64
     ]
+    # print("Load Library")
+    # Ticcer.toc()
 
-    combs_arr = array('d', possible.flatten().tolist())
-    combs_raw = (ctypes.c_double * len(combs_arr)).from_buffer(combs_arr)
-    # print(combs_arr)
-    # print(np.shape(possible.flatten().tolist()))
-
-    grid_arr = array('d', flatten_3d_array(big_grid))
-    grid_raw = (ctypes.c_double * len(grid_arr)).from_buffer(grid_arr)
-
-    num_sats = int(np.shape(big_grid)[0])
-
-    c = conn1(combs_raw, len(combs_raw), grid_raw, len(grid_raw), num_sats)
-
-
-    return c/len(possible)
-
-
-
-# Function to evaluate the fitness of satellite communication by counting successful connections
-def fitness_multi_sat(sim_sats, satellites, possible, real_sat_grid, time, b):
+    # Ticcer.tic()
+    for i in range(1,len(satellites)+1):
+        x = np.where((sim_sat.at(time) - satellites[i-1].at(time)).distance().km <= 500)[0]
+        real_sat_grid[i*depth:(i*depth)+len(x)] = x
+        real_sat_grid[(i*(len(satellites)+1))*depth:((i*(len(satellites)+1))*depth)+len(x)] = x
+    # print("Get sim sat pos")
+    # Ticcer.toc()
     
-    possible += len(sim_sats)
+    # Ticcer.tic()
+    sizer = len(real_sat_grid)
+    grid_raw = real_sat_grid.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+    # print("To ctype conversion")
+    # Ticcer.toc()
 
-    big_grid = np.zeros((len(satellites)+len(sim_sats), len(satellites)+len(sim_sats), len(time)))
-    big_grid[big_grid == 0] = np.nan
-    big_grid[len(sim_sats):,len(sim_sats):] = real_sat_grid
+    num_sats = int(len(satellites))+1
 
-    # Compare sim sats against each other
-    for j in range(len(sim_sats)):
-        for i in range(len(sim_sats)):
-            if i != j:
-                x = np.where((sim_sats[j].at(time) - sim_sats[i].at(time)).distance().km <= 500)[0]
-                if len(x) == 0:
-                    return -1, 0
-                big_grid[i,j,:len(x)] = x
-                big_grid[j,i,:len(x)] = x
+    # Ticcer.tic()
+    c = conn1(possible, len(possible), grid_raw, sizer, num_sats)
+    # print("Run consensus")
+    # Ticcer.toc()
 
-    # Compare sim sats against real sats
-    for j in range(len(sim_sats)):
-        for i in range(len(satellites)):
-            x = np.where((sim_sats[j].at(time) - satellites[i].at(time)).distance().km <= 500)[0]
-            if len(x) > b:
-                b = len(x)
-            big_grid[i+len(sim_sats),0,:len(x)] = x
-            big_grid[0,i+len(sim_sats),:len(x)] = x
+    return c/len(possible), c#, np.mean(time_li)
 
-    big_grid = big_grid[:,:,:b+1]    
 
-    ############# ACCELERATE WITH GOLANG
-    c = 0
-    time_li = []
-    for small_comb in possible:
-        small_grid = big_grid[[*np.arange(len(sim_sats)),*small_comb]][:,[*np.arange(len(sim_sats)),*small_comb]]
-        comm =  [
-            [[0,1],[0,2],[0,3]],
-            [[1,0],[1,2],[1,3], [2,0],[2,1],[2,3], [3,0],[3,1],[3,2]],
-            [[0,1],[0,2],[0,3], [1,0],[1,2],[1,3], [2,0],[2,1],[2,3], [3,0],[3,1],[3,2]],
-            [[1,0],[2,0],[3,0]]
-        ]
-        completed, times = consensus(comm, small_grid)
-        if completed:
-            c += 1
-            time_li.append(times)
-    if c == 0:
-        time_li.append(0)
-    ############# ACCELERATE WITH GOLANG
 
-    return c/len(possible), np.mean(time_li)
+# # Function to evaluate the fitness of satellite communication by counting successful connections
+# def fitness_multi_sat(sim_sats, satellites, possible, real_sat_grid, time, b):
+    
+#     possible += len(sim_sats)
+
+#     big_grid = np.zeros((len(satellites)+len(sim_sats), len(satellites)+len(sim_sats), len(time)))
+#     big_grid[big_grid == 0] = np.nan
+#     big_grid[len(sim_sats):,len(sim_sats):] = real_sat_grid
+
+#     # Compare sim sats against each other
+#     for j in range(len(sim_sats)):
+#         for i in range(len(sim_sats)):
+#             if i != j:
+#                 x = np.where((sim_sats[j].at(time) - sim_sats[i].at(time)).distance().km <= 500)[0]
+#                 if len(x) == 0:
+#                     return -1, 0
+#                 big_grid[i,j,:len(x)] = x
+#                 big_grid[j,i,:len(x)] = x
+
+#     # Compare sim sats against real sats
+#     for j in range(len(sim_sats)):
+#         for i in range(len(satellites)):
+#             x = np.where((sim_sats[j].at(time) - satellites[i].at(time)).distance().km <= 500)[0]
+#             if len(x) > b:
+#                 b = len(x)
+#             big_grid[i+len(sim_sats),0,:len(x)] = x
+#             big_grid[0,i+len(sim_sats),:len(x)] = x
+
+#     big_grid = big_grid[:,:,:b+1]    
+
+#     ############# ACCELERATE WITH GOLANG
+#     c = 0
+#     time_li = []
+#     for small_comb in possible:
+#         small_grid = big_grid[[*np.arange(len(sim_sats)),*small_comb]][:,[*np.arange(len(sim_sats)),*small_comb]]
+#         comm =  [
+#             [[0,1],[0,2],[0,3]],
+#             [[1,0],[1,2],[1,3], [2,0],[2,1],[2,3], [3,0],[3,1],[3,2]],
+#             [[0,1],[0,2],[0,3], [1,0],[1,2],[1,3], [2,0],[2,1],[2,3], [3,0],[3,1],[3,2]],
+#             [[1,0],[2,0],[3,0]]
+#         ]
+#         completed, times = consensus(comm, small_grid)
+#         if completed:
+#             c += 1
+#             time_li.append(times)
+#     if c == 0:
+#         time_li.append(0)
+#     ############# ACCELERATE WITH GOLANG
+
+#     return c/len(possible), np.mean(time_li)

@@ -75,6 +75,7 @@ extern "C" {
 #endif
 
 extern int consensus_completeness_per(GoFloat64* combs_raw, GoInt64 combs_n, GoFloat64* grid_raw, GoInt64 grid_n, GoInt64 num_sats);
+extern int consensus_completeness_per_non_ga(GoFloat64* combs_raw, GoInt64 combs_n, GoFloat64* grid_raw, GoInt64 grid_n, GoInt64 num_sats);
 
 #ifdef __cplusplus
 }

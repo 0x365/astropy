@@ -33,8 +33,8 @@ if not os.path.exists(save_location):
 
 
 
-pop_size = 50
-num_generations = 50
+pop_size = 200
+num_generations = 20
 num_start_days = 10
 
 run_mode = "completed" # "time"
@@ -65,7 +65,7 @@ class MyProblem(Problem):
             "mot_i": Real(bounds=(4000, 6500)),
         }
         super().__init__(vars=vars, n_obj=1, **kwargs)
-        combs_arr = array('d', (possible+1).flatten().tolist())
+        combs_arr = array('d', (possible).flatten().tolist())
         combs_raw = (ctypes.c_double * len(combs_arr)).from_buffer(combs_arr)
         self.possible = combs_raw
         self.real_sat_grid_flat = np.array(flatten_plus_one(real_sat_grid), dtype=float)
@@ -136,29 +136,30 @@ for start_day_added in range(num_start_days):
 
     ########## Get all valid combinations
 
-    valid_combs = []
-    valid_combs_time = []
-    for i, x in enumerate(tqdm(satellites, desc="Building possible real satellite combinations")):
-        for j, y in enumerate(satellites):
-            if j > i:
-                barycentric = (x.at(time) - y.at(time)).distance().km
-                ans = np.where(barycentric <= 500)[0]
-                if len(ans) > 0:
-                    valid_combs.append([i, j])
-                    valid_combs_time.append(ans)
+    # valid_combs = []
+    # valid_combs_time = []
+    # for i, x in enumerate(tqdm(satellites, desc="Building possible real satellite combinations")):
+    #     for j, y in enumerate(satellites):
+    #         if j > i:
+    #             barycentric = (x.at(time) - y.at(time)).distance().km
+    #             ans = np.where(barycentric <= 500)[0]
+    #             if len(ans) > 0:
+    #                 valid_combs.append([i, j])
+    #                 valid_combs_time.append(ans)
 
-    valid_combs = np.array(valid_combs)       
+    # valid_combs = np.array(valid_combs)       
 
-    def checker(temp):
-        for i, x in enumerate(temp):
-            for j, y in enumerate(temp):
-                if j > i:
-                    if not y in valid_combs[valid_combs[:,0] == x, 1]:
-                        return False
-        return True
+    # def checker(temp):
+    #     for i, x in enumerate(temp):
+    #         for j, y in enumerate(temp):
+    #             if j > i:
+    #                 if not y in valid_combs[valid_combs[:,0] == x, 1]:
+    #                     return False
+    #     return True
 
-    possible = filter(checker, itertools.combinations(np.arange(0,np.amax(valid_combs)), 3))
-    possible = np.array(list(possible))
+    # possible = filter(checker, itertools.combinations(np.arange(0,np.amax(valid_combs)), 3))
+    # possible = np.array(list(possible))
+    possible = np.array(list(itertools.combinations(np.arange(0,len(satellites)+1), 4)))
 
 
 
@@ -194,10 +195,18 @@ for start_day_added in range(num_start_days):
         'anom_i': orb.mean_anomaly.degrees, 
         'mot_i': orb.mean_motion_per_day.degrees
     }
+    # X = {
+    #     'argp_i': 0,
+    #     'ecc_i': 0, 
+    #     'inc_i': 0, 
+    #     'raan_i': 0, 
+    #     'anom_i': 0, 
+    #     'mot_i': 0
+    # }
 
 
-    pop = Population.new("X", [X])
-    Evaluator().eval(problem, pop)
+    # pop = Population.new("X", [X])
+    # Evaluator().eval(problem, pop)
 
 
 
@@ -208,7 +217,7 @@ for start_day_added in range(num_start_days):
 
 
     algorithm = MixedVariableGA(
-        pop_size=int(pop_size), sampling=pop)
+        pop_size=int(pop_size))#, sampling=pop)
 
     res = minimize(problem,
                 algorithm,
@@ -232,4 +241,4 @@ for start_day_added in range(num_start_days):
             "f": res.history[i].pop.get("F")[:,0].tolist()
         })
 
-    save_json("data-ga/"+str(start_day_added)+"_"+run_mode+".json", out_data)
+    save_json("data-ga/long_"+str(start_day_added)+"_"+run_mode+".json", out_data)

@@ -8,7 +8,6 @@ import (
 	"C"
 )
 import (
-	"fmt"
 	"math"
 	"unsafe"
 )
@@ -64,6 +63,11 @@ func convert_to_n_by_n_by_rest(grid []float64, n int) [][][]float64 {
 	}
 
 	return result
+}
+
+type YourStructure struct {
+	c  C.int
+	c2 C.int
 }
 
 func consensus(comm [][][]int, ec []int, grid [][][]float64) (bool, int) {
@@ -135,10 +139,11 @@ func consensus_completeness_per(combs_raw *float64, combs_n int64, grid_raw *flo
 
 	grid_flat = unsafe.Slice(grid_raw, grid_n)
 
-	combs = convert_to_n_by_rest(combs_flat, 3)
+	combs = convert_to_n_by_rest(combs_flat, 4) // 3 for ga, 4 for non_ga
 
 	for i = 0; i < len(combs); i++ {
-		var temp = []int{0}
+		var temp = []int{} // For ga analyses
+		// var temp = []int{0}	// For non_ga analyses
 		for j = 0; j < len(combs[i]); j++ {
 			temp = append(temp, int(combs[i][j]))
 		}
@@ -212,7 +217,114 @@ func consensus_completeness_per(combs_raw *float64, combs_n int64, grid_raw *flo
 	// } else {
 	// 	timer_all = int(float64(timer_all) / float64(c))
 	// }
-	fmt.Println(len(uni), num_sats)
+	// fmt.Println(len(uni), num_sats)
 
-	return C.int(c) //C.int(timer_all)
+	return C.int(len(uni))
+}
+
+//export consensus_completeness_per_non_ga
+func consensus_completeness_per_non_ga(combs_raw *float64, combs_n int64, grid_raw *float64, grid_n int64, num_sats int64) C.int {
+
+	var grid_flat []float64
+	var combs_flat []float64
+
+	var combs [][]float64
+	var grid [][][]float64
+
+	var comm [][][][]int
+	var ec [][]int
+
+	var completed bool
+	var timer int
+
+	var i int
+	var j int
+	var c int
+	var timer_all int
+
+	combs_flat = unsafe.Slice(combs_raw, combs_n)
+
+	grid_flat = unsafe.Slice(grid_raw, grid_n)
+
+	combs = convert_to_n_by_rest(combs_flat, 4) // 3 for ga, 4 for non_ga
+
+	for i = 0; i < len(combs); i++ {
+		// var temp = []int{0} // For ga analyses
+		var temp = []int{} // For non_ga analyses
+		for j = 0; j < len(combs[i]); j++ {
+			temp = append(temp, int(combs[i][j]))
+		}
+		if len(temp) == 4 {
+			ec = append(ec, temp)
+		}
+	}
+
+	grid = convert_to_n_by_n_by_rest(grid_flat, int(num_sats))
+
+	comm = [][][][]int{
+		{
+			{{0, 1}, {0, 2}, {0, 3}},
+			{{1, 0}, {1, 2}, {1, 3}, {2, 0}, {2, 1}, {2, 3}, {3, 0}, {3, 1}, {3, 2}},
+			{{0, 1}, {0, 2}, {0, 3}, {1, 0}, {1, 2}, {1, 3}, {2, 0}, {2, 1}, {2, 3}, {3, 0}, {3, 1}, {3, 2}},
+			{{1, 0}, {2, 0}, {3, 0}},
+		},
+		{
+			{{1, 0}, {1, 2}, {1, 3}},
+			{{0, 1}, {0, 2}, {0, 3}, {2, 0}, {2, 1}, {2, 3}, {3, 0}, {3, 1}, {3, 2}},
+			{{1, 0}, {1, 2}, {1, 3}, {0, 1}, {0, 2}, {0, 3}, {2, 0}, {2, 1}, {2, 3}, {3, 0}, {3, 1}, {3, 2}},
+			{{0, 1}, {2, 1}, {3, 1}},
+		},
+		{
+			{{2, 0}, {2, 1}, {2, 3}},
+			{{0, 1}, {0, 2}, {0, 3}, {1, 0}, {1, 2}, {1, 3}, {3, 0}, {3, 1}, {3, 2}},
+			{{2, 0}, {2, 1}, {2, 3}, {1, 0}, {1, 2}, {1, 3}, {0, 1}, {0, 2}, {0, 3}, {3, 0}, {3, 1}, {3, 2}},
+			{{0, 2}, {1, 2}, {3, 2}},
+		},
+		{
+			{{3, 0}, {3, 1}, {3, 2}},
+			{{0, 1}, {0, 2}, {0, 3}, {1, 0}, {1, 2}, {1, 3}, {2, 0}, {2, 1}, {2, 3}},
+			{{3, 0}, {3, 1}, {3, 2}, {1, 0}, {1, 2}, {1, 3}, {0, 1}, {0, 2}, {0, 3}, {2, 0}, {2, 1}, {2, 3}},
+			{{0, 3}, {1, 3}, {2, 3}},
+		},
+	}
+
+	var k int
+	var kk int
+	var uni []int
+	var already bool
+
+	c = 0
+	timer_all = 0
+
+	for j = 0; j < len(comm); j++ {
+		for i = 0; i < len(ec); i++ {
+			completed, timer = consensus(comm[j], ec[i], grid)
+			if completed {
+				c += 1
+				timer_all += timer
+
+				for kk = 0; kk < len(ec[i]); kk++ {
+					already = false
+					for k = 0; k < len(uni); k++ {
+						if ec[i][kk] == uni[k] {
+							already = true
+						}
+					}
+					if !already {
+						uni = append(uni, ec[i][kk])
+					}
+				}
+
+			}
+		}
+	}
+
+	// if c == 0 {
+	// 	timer_all = 2881
+	// } else {
+	// 	timer_all = int(float64(timer_all) / float64(c))
+	// }
+	// fmt.Println(len(uni), num_sats)
+
+	return C.int(len(uni))
 }

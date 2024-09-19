@@ -69,7 +69,7 @@ def fitness(sim_sat, satellites, possible, real_sat_grid, depth, time):
     c = conn1(possible, len(possible), grid_raw, sizer, num_sats)
     # print("Run consensus")
     # Ticcer.toc()
-
+    return c, c
     return c/len(possible), c#, np.mean(time_li)
 
 

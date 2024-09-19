@@ -18,12 +18,13 @@ from common import *
 
 os.system("go build -buildmode=c-shared -o ./go_fit.so .")
 
+
 def fitness_no_sim(satellites, possible, real_sat_grid):
 
     Ticcer = TicToc()
     # Ticcer.tic()
     library = ctypes.cdll.LoadLibrary("./go_fit.so")
-    conn1 = library.consensus_completeness_per
+    conn1 = library.consensus_completeness_per_non_ga
     conn1.restype = ctypes.c_int64
 
     conn1.argtypes = [
@@ -52,63 +53,38 @@ def fitness_no_sim(satellites, possible, real_sat_grid):
 
 
 
-open_location = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
-if not os.path.exists(open_location):
-    raise Exception("Data does not exist")
-save_location = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
-if not os.path.exists(save_location):
-    os.makedirs(save_location)
 
-for xxx in range(10):
-    ts = load.timescale()
+def get_possible(satellites):
+    # valid_combs = []
+    # valid_combs_time = []
+    # for i, x in enumerate(tqdm(satellites, desc="Building possible real satellite combinations")):
+    #     for j, y in enumerate(satellites):
+    #         if j > i:
+    #             barycentric = (x.at(time) - y.at(time)).distance().km
+    #             ans = np.where(barycentric <= 500)[0]
+    #             if len(ans) > 0:
+    #                 valid_combs.append([i, j])
+    #                 valid_combs_time.append(ans)
 
-    start_date = datetime.datetime(2024,9,11, tzinfo=utc)
-    end_date = start_date + relativedelta(days=1+xxx)
-    time_range = date_range(start_date, end_date, 30, 'seconds')
-    time = ts.from_datetimes(time_range)
-    epoch = (start_date - datetime.datetime(1949,12,31,0,0, tzinfo=utc))
+    # valid_combs = np.array(valid_combs)       
 
+    # def checker(temp):
+    #     for i, x in enumerate(temp):
+    #         for j, y in enumerate(temp):
+    #             if j > i:
+    #                 if not y in valid_combs[valid_combs[:,0] == x, 1]:
+    #                     return False
+    #     return True
 
+    # possible = filter(checker, itertools.combinations(np.arange(0,np.amax(valid_combs)), 3))
+    # possible_with_sim = np.array(list(possible))
+    possible = np.array(list(itertools.combinations(np.arange(0,len(satellites)), 4)))
 
-
-
-    satellites = get_icsmd_satellites(open_location+"/active.tle", "icsmd_sats.txt")
-
-    # REMOVE
-    # satellites = satellites[:len(satellites)//3]
-
-
-
-    ########## Get all valid combinations
-
-    valid_combs = []
-    valid_combs_time = []
-    for i, x in enumerate(tqdm(satellites, desc="Building possible real satellite combinations")):
-        for j, y in enumerate(satellites):
-            if j > i:
-                barycentric = (x.at(time) - y.at(time)).distance().km
-                ans = np.where(barycentric <= 500)[0]
-                if len(ans) > 0:
-                    valid_combs.append([i, j])
-                    valid_combs_time.append(ans)
-
-    valid_combs = np.array(valid_combs)       
-
-    def checker(temp):
-        for i, x in enumerate(temp):
-            for j, y in enumerate(temp):
-                if j > i:
-                    if not y in valid_combs[valid_combs[:,0] == x, 1]:
-                        return False
-        return True
-
-    # possible = filter(checker, itertools.combinations(np.arange(0,np.amax(valid_combs)), 4))
-    # possible = np.array(list(possible))
-    possible = np.array(list(itertools.combinations(np.arange(0,np.amax(valid_combs)), 4)))
+    return possible
 
 
-    ######### Create real sat grid
 
+def build_grid(satellites):
     big_comb = np.array(satellites)
 
     real_sat_grid = np.zeros((len(big_comb), len(big_comb), len(time)))
@@ -121,7 +97,37 @@ for xxx in range(10):
                 real_sat_grid[i,j,:len(x)] = x
                 real_sat_grid[j,i,:len(x)] = x
 
-    def flattener(real_sat_grid):
+    return real_sat_grid
+
+
+def gen_sat(val):
+    argp_i = val["argp_i"]
+    ecc_i = val["ecc_i"]
+    inc_i = val["inc_i"]
+    raan_i = val["raan_i"]
+    anom_i = val["anom_i"]
+    mot_i = val["mot_i"]
+    # print(val)
+    satellite2 = Satrec()
+    satellite2.sgp4init(
+        WGS72,                      # gravity model
+        'i',                        # 'a' = old AFSPC mode, 'i' = improved mode
+        25544,                      # satnum: Satellite number
+        epoch.days,                 # epoch: days since 1949 December 31 00:00 UT
+        3.8792e-05,                 # bstar: drag coefficient (1/earth radii)
+        0.0,                        # ndot: ballistic coefficient (radians/minute^2)
+        0.0,                        # nddot: mean motion 2nd derivative (radians/minute^3)
+        ecc_i,                      # ecco: eccentricity
+        np.deg2rad(argp_i),         # argpo: argument of perigee (radians)
+        np.deg2rad(inc_i),          # inclo: inclination (radians)
+        np.deg2rad(anom_i),         # mo: mean anomaly (radians)
+        np.deg2rad(mot_i)/(24*60),  # no_kozai: mean motion (radians/minute)
+        np.deg2rad(raan_i),         # nodeo: R.A. of ascending node (radians)
+    )
+    sim_sat = EarthSatellite.from_satrec(satellite2, ts)
+    return sim_sat
+
+def flattener(real_sat_grid):
 
         flat_grid = []
         for i in range(np.shape(real_sat_grid)[0]):
@@ -130,37 +136,71 @@ for xxx in range(10):
 
         return flat_grid
 
+open_location = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+if not os.path.exists(open_location):
+    raise Exception("Data does not exist")
+save_location = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+if not os.path.exists(save_location):
+    os.makedirs(save_location)
+
+json_out = {}
+
+for yyy in range(0,10):
+    data1 = []
+    for xxx in range(1,11):
+        temp = []
+        ts = load.timescale()
+
+        start_date = datetime.datetime(2024,9,11+yyy, tzinfo=utc)
+        end_date = start_date + relativedelta(days=xxx/10)
+        time_range = date_range(start_date, end_date, 30, 'seconds')
+        time = ts.from_datetimes(time_range)
+        epoch = (start_date - datetime.datetime(1949,12,31,0,0, tzinfo=utc))
+
+        satellites = get_icsmd_satellites(open_location+"/active.tle", "icsmd_sats.txt")
+
+        
+        print("Number of days:", xxx/10)
+
+        real_sat_grid = build_grid(satellites)
+        possible = get_possible(satellites)
+        flat_sat_grid = np.array(flattener(real_sat_grid), dtype=float)
+        
+        completed_no_sim = fitness_no_sim(satellites, possible, flat_sat_grid)
+        print(completed_no_sim)
+        temp.append([completed_no_sim, 79])
+
+        # print(completed_no_sim/(len(possible)*4))
 
 
 
-    flat_sat_grid = np.array(flattener(real_sat_grid), dtype=float)
+        val = {
+            "argp_i": 100.25553477215583,
+            "ecc_i": 0.002777799378644539,
+            "inc_i": 84.93476919598037,
+            "raan_i": 169.3881119027934,
+            "anom_i": 89.68326121817842,
+            "mot_i": 5252.716278800325
+        }
+        sim_sat = gen_sat(val)
+        satellites = [sim_sat, *satellites]
 
-    print("Number of days:", 1+xxx)
+        real_sat_grid = build_grid(satellites)
+        possible = get_possible(satellites)
+        flat_sat_grid = np.array(flattener(real_sat_grid), dtype=float)
+        
+        completed_with_sim = fitness_no_sim(satellites, possible, flat_sat_grid)
+        print(completed_with_sim)
+        temp.append([completed_with_sim, 80])
 
-    completed = fitness_no_sim(satellites, possible, flat_sat_grid)
+        data1.append(temp)
 
-    print(completed/(len(possible)*4))
+        # print(completed_with_sim/(len(possible)*4))
+        print(data1)
+    json_out.update({"day_"+str(yyy): data1})
 
+    save_json("with_without.json", json_out)
 
-
-
-
-
-
-
-
-
-###### For no simulated satellites
-# [1 day = 0,                       0 out of 79 sats]
-# [2 day = 4.346530662320136e-05,   12 out of 79 sats]
-# [3 day = 0.0006176279860490387,   49 out of 79 sats]
-# [4 day = 0.009457209457209457,    66 out of 79 sats]
-# [5 day = 0.03995811206337522,     68 out of 79 sats]
-# [6 day = 0.09982123140017878,     69 out of 79 sats]
-# [7 day = 0.1948612790718054,      70 out of 79 sats]
-# [8 day = 0.30194945405471724,     71 out of 79 sats]
-# [9 day = 0.3801400354031933,      72 out of 79 sats]
-# [10 day = 0.45094957673905045,    72 out of 79 sats]
-
+save_json("with_without.json", json_out)
 
 

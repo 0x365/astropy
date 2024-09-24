@@ -102,14 +102,14 @@ ax7.set_xlabel("Generation")
 ax7.set_ylabel("Increase in Number of Satellites")
 
 
-without_data_raw = load_json("with_without.json")
-without_data = []
-for i in range(20):
-    try:
-        without_data.append(np.array(without_data_raw["day_"+str(i)]))
-    except:
-        pass
-without_data = np.array(without_data)
+# without_data_raw = load_json("with_without.json")
+# without_data = []
+# for i in range(20):
+#     try:
+#         without_data.append(without_data_raw[i]["1"]["no_sim"]["num_participants"])
+#     except:
+#         pass
+# without_data = np.array(without_data)
 
 for ii in ["01_", "05_", "10_"]:
 
@@ -154,7 +154,7 @@ for ii in ["01_", "05_", "10_"]:
         anom = [[xii["anom_i"] for xii in xi] for xi in x]
         mot = [[xii["mot_i"]/360 for xii in xi] for xi in x]
 
-        mean_f = np.mean(f,axis=1)-without_data[j,timer,0,0]
+        mean_f = np.mean(f,axis=1)#-without_data[j,timer,0,0]
         mean_f_log = np.power(mean_f,50)
         normalised_f = (mean_f_log - np.amin(mean_f_log)) / (np.amax(mean_f_log) - np.amin(mean_f_log))
 

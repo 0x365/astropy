@@ -27,12 +27,6 @@ for comb in tqdm(list(combinati)):
     except:
         continue
 
-    # print(np.shape(data))
-
-        # print(comb)
-        # print(np.shape(data))
-        # print(np.mean(data))
-
     data = np.squeeze(data)
     while len(np.shape(data)) > 2:
         data = np.mean(data, axis=np.argmin(np.shape(data)))

@@ -18,7 +18,7 @@ save_location = os.path.join(os.path.dirname(os.path.abspath(__file__)), "figure
 if not os.path.exists(save_location):
     os.makedirs(save_location)
 
-
+start_adder = 0
 
 
 
@@ -32,7 +32,7 @@ print('Loaded', len(satellites), 'satellites')
 all_starts = []
 all_params = []
 for sat in satellites:
-    barycentric = sat.at(ts.utc(2024, 9, 11, 0, 0, 0))
+    barycentric = sat.at(ts.utc(2024, 9, 11+start_adder, 0, 0, 0))
     all_starts.append(np.append(barycentric.position.km, barycentric.velocity.km_per_s))
     orbit_elements = osculating_elements_of(barycentric)
 
@@ -89,7 +89,7 @@ satellites = get_icsmd_satellites(open_location+"/active.tle", "icsmd_sats.txt")
 all_starts = []
 all_params = []
 for sat in satellites:
-    barycentric = sat.at(ts.utc(2024, 9, 11, 0, 0, 0))
+    barycentric = sat.at(ts.utc(2024, 9, 11+start_adder, 0, 0, 0))
     all_starts.append(np.append(barycentric.position.km, barycentric.velocity.km_per_s))
     orbit_elements = osculating_elements_of(barycentric)
 
@@ -159,7 +159,7 @@ plt.clf()
 data_all = []
 for i in range(10):
     try:
-        data = load_json("data-ga/"+str(i)+"_completed.json")
+        data = load_json("data-ga/10_"+str(i)+"_completed.json")
         data = data[1:]
         data_all.append(data)
     except:
@@ -177,30 +177,57 @@ for i in range(10):
     # print(best_coords_pos)
     X = x[-1][best_coords_pos]
 
-    points_to_scatter.append([X["argp_i"], np.log10(X["ecc_i"]), X["inc_i"], X["raan_i"], X["anom_i"], X["mot_i"]/(360)])
+    points_to_scatter.append([X["argp_i"], (X["ecc_i"]), X["inc_i"], X["raan_i"], X["anom_i"], X["mot_i"]/(360)])
 
 points_to_scatter = np.array(points_to_scatter)
 
-fig, axs = plt.subplots(1,6, figsize=(10,5), layout="constrained")
+fig, axs = plt.subplots(1,6, figsize=(20,10), layout="tight")
 
-all_params[:,1] = np.log10(all_params[:,1]) # Log Eccentricity
-all_all_params[:,1] = np.log10(all_all_params[:,1]) # Log Eccentricity
-all_params[:,5] = all_params[:,5]/(360) # Log Eccentricity
-all_all_params[:,1] = all_all_params[:,1]/(360) # Log Eccentricity
+
+all_params[all_params[:,0] > 180,0] = all_params[all_params[:,0] > 180,0] -360
+all_all_params[all_all_params[:,0] > 180,0] = all_all_params[all_all_params[:,0] > 180,0] -360
+
+all_params[:,1] = (all_params[:,1]) # Log Eccentricity
+all_all_params[:,1] = (all_all_params[:,1]) # Log Eccentricity
+
+all_params[all_params[:,2] > 90,2] = all_params[all_params[:,2] > 90,2] - 180
+all_all_params[all_all_params[:,2] > 90,2] = all_all_params[all_all_params[:,2] > 90,2] - 180
+
+all_params[all_params[:,3] > 180,3] = all_params[all_params[:,3] > 180,3] -360
+all_all_params[all_all_params[:,3] > 180,3] = all_all_params[all_all_params[:,3] > 180,3] -360
+
+all_params[all_params[:,4] > 180,4] = all_params[all_params[:,4] > 180,4] -360
+all_all_params[all_all_params[:,4] > 180,4] = all_all_params[all_all_params[:,4] > 180,4] -360
+
+all_params[:,5] = (all_params[:,5])/360 # Log Eccentricity
+all_all_params[:,5] = (all_all_params[:,5])/360 # Log Eccentricity
+
+colors = plt.cm.hsv(np.linspace(0, 1, len(points_to_scatter)))
+
 for i in range(6):
     parts_all = axs[i].violinplot(all_all_params[:,i], [0], widths=1, showmeans=False, showextrema=False, showmedians=False)
     parts_icsmd =  axs[i].violinplot(all_params[:,i], [0], widths=0.5, showmeans=False, showextrema=False, showmedians=False)
-    axs[i].scatter([0]*len(points_to_scatter), points_to_scatter[:,i], c="#D0A5C0", marker="x")
+    axs[i].scatter([0]*len(points_to_scatter), points_to_scatter[:,i], c=colors, marker="x", label="Orbital Elements to Improve Consensus")
     for pc in parts_all['bodies']:
         pc.set_facecolor('#1E3231')
         pc.set_alpha(0.2)
     for pc in parts_icsmd['bodies']:
         pc.set_facecolor('#1E3231')
         pc.set_alpha(0.5)
-    axs[i].set_title(["ARGP", "ECC", "INC", "RAAN", "MA", "MM"][i])
+    axs[i].set_title(["Argument of Periapsis (Degrees)", "Eccentricity (0-1)", "Inclination (Degrees)", "RAAN (Degrees)", "Mean Anomoly (Degrees)", "Mean Motion (Revolutions/Day)"][i])
     axs[i].get_xaxis().set_visible(False)
-    axs[i].set_ylim([ [0,360],[-7,0],[0,180],[0,360],[0,360],[0,np.amax(all_params[:,5])]][i])
+    axs[i].set_ylim([ [-180, 180],[0,0.15],[-90,90],[-180,180],[-180,180],[0,6500/360]][i])
 
+center_on = 0
+axs[center_on].scatter([0],[-1000], color='#1E3231', label="All Satellites", alpha=0.2)
+axs[center_on].scatter([0],[-1000], color='#1E3231', label="ICSMD Subset Satellites", alpha=0.5)
+leg = axs[center_on].legend(ncol=3, fontsize="20")
+bb = leg.get_bbox_to_anchor().transformed(axs[center_on].transAxes.inverted())
+# bb.x0 += -0.3
+# bb.x1 += -0.3
+bb.y0 += -0.1
+bb.y1 += -0.1
+leg.set_bbox_to_anchor(bb, transform = axs[center_on].transAxes)
 
 plt.savefig(save_location+"/subgroup_orbital_elements_of_all_sats_split.png")
 plt.clf()

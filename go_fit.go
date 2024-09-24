@@ -4,6 +4,9 @@
 
 package main
 
+/*
+#include <stdlib.h>  // For malloc and free
+*/
 import (
 	"C"
 )
@@ -14,14 +17,14 @@ import (
 
 func main() {}
 
-func convert_to_n_by_rest(grid []float64, n_div int) [][]float64 {
+func convert_to_n_by_rest(grid []float64, n_div int) [][]int {
 
 	var depth int
-	// Calculate the number of rows (n) based on the length of the flat grid
+	// // Calculate the number of rows (n) based on the length of the flat grid
 	depth = int(math.Ceil(float64(len(grid)) / float64(n_div)))
 
 	// Create the 2D slice
-	result := make([][]float64, depth)
+	result := make([][]int, depth)
 
 	// Fill the 2D slice
 	for i := 0; i < depth; i++ {
@@ -32,7 +35,11 @@ func convert_to_n_by_rest(grid []float64, n_div int) [][]float64 {
 			end = len(grid) // Handle the case where we exceed the grid length
 		}
 		// Slice the grid and append to result
-		result[i] = grid[start:end]
+		result[i] = make([]int, end-start)
+		// Convert float64 to int and fill the inner slice
+		for j := start; j < end; j++ {
+			result[i][j-start] = int(grid[j]) // Convert and assign
+		}
 	}
 
 	return result
@@ -70,7 +77,7 @@ type YourStructure struct {
 	c2 C.int
 }
 
-func consensus(comm [][][]int, ec []int, grid [][][]float64) (bool, int) {
+func consensus(comm [][][]int, ec []int, grid [][][]float64, num_participants int) (bool, int) {
 	var i int
 	var j int
 	var c int
@@ -78,8 +85,12 @@ func consensus(comm [][][]int, ec []int, grid [][][]float64) (bool, int) {
 	var t int
 	var found bool
 	var final_time int
-	t_local := []float64{0, 0, 0, 0}
-	t_local_next := []float64{0, 0, 0, 0}
+	var t_local []float64
+	var t_local_next []float64
+	for i = 0; i < num_participants; i++ {
+		t_local = append(t_local, 0.0)
+		t_local_next = append(t_local_next, 0.0)
+	}
 	for c = 0; c < len(comm); c++ {
 		copy(t_local_next, t_local)
 		for c2 = 0; c2 < len(comm[c]); c2++ {
@@ -107,7 +118,7 @@ func consensus(comm [][][]int, ec []int, grid [][][]float64) (bool, int) {
 		// fmt.Println(t_local)
 	}
 	final_time = 0
-	for t = 0; t < 4; t++ {
+	for t = 0; t < num_participants; t++ {
 		if final_time < int(t_local[t]) {
 			final_time = int(t_local[t])
 		}
@@ -115,120 +126,68 @@ func consensus(comm [][][]int, ec []int, grid [][][]float64) (bool, int) {
 	return true, final_time
 }
 
-//export consensus_completeness_per
-func consensus_completeness_per(combs_raw *float64, combs_n int64, grid_raw *float64, grid_n int64, num_sats int64) C.int {
-
-	var grid_flat []float64
-	var combs_flat []float64
-
-	var combs [][]float64
-	var grid [][][]float64
-
+func get_comm(num_participants int) [][][][]int {
 	var comm [][][][]int
-	var ec [][]int
+	var temp [][][]int
+	var temp1 [][]int
+	var temp2 [][]int
+	var temp3 [][]int
+	var temp4 [][]int
 
-	var completed bool
-	var timer int
+	for i := 0; i < num_participants; i++ {
+		temp = [][][]int{}
 
-	var i int
-	var j int
-	var c int
-	var timer_all int
-
-	combs_flat = unsafe.Slice(combs_raw, combs_n)
-
-	grid_flat = unsafe.Slice(grid_raw, grid_n)
-
-	combs = convert_to_n_by_rest(combs_flat, 4) // 3 for ga, 4 for non_ga
-
-	for i = 0; i < len(combs); i++ {
-		var temp = []int{} // For ga analyses
-		// var temp = []int{0}	// For non_ga analyses
-		for j = 0; j < len(combs[i]); j++ {
-			temp = append(temp, int(combs[i][j]))
-		}
-		if len(temp) == 4 {
-			ec = append(ec, temp)
-		}
-	}
-
-	grid = convert_to_n_by_n_by_rest(grid_flat, int(num_sats))
-
-	comm = [][][][]int{
-		{
-			{{0, 1}, {0, 2}, {0, 3}},
-			{{1, 0}, {1, 2}, {1, 3}, {2, 0}, {2, 1}, {2, 3}, {3, 0}, {3, 1}, {3, 2}},
-			{{0, 1}, {0, 2}, {0, 3}, {1, 0}, {1, 2}, {1, 3}, {2, 0}, {2, 1}, {2, 3}, {3, 0}, {3, 1}, {3, 2}},
-			{{1, 0}, {2, 0}, {3, 0}},
-		},
-		{
-			{{1, 0}, {1, 2}, {1, 3}},
-			{{0, 1}, {0, 2}, {0, 3}, {2, 0}, {2, 1}, {2, 3}, {3, 0}, {3, 1}, {3, 2}},
-			{{1, 0}, {1, 2}, {1, 3}, {0, 1}, {0, 2}, {0, 3}, {2, 0}, {2, 1}, {2, 3}, {3, 0}, {3, 1}, {3, 2}},
-			{{0, 1}, {2, 1}, {3, 1}},
-		},
-		{
-			{{2, 0}, {2, 1}, {2, 3}},
-			{{0, 1}, {0, 2}, {0, 3}, {1, 0}, {1, 2}, {1, 3}, {3, 0}, {3, 1}, {3, 2}},
-			{{2, 0}, {2, 1}, {2, 3}, {1, 0}, {1, 2}, {1, 3}, {0, 1}, {0, 2}, {0, 3}, {3, 0}, {3, 1}, {3, 2}},
-			{{0, 2}, {1, 2}, {3, 2}},
-		},
-		{
-			{{3, 0}, {3, 1}, {3, 2}},
-			{{0, 1}, {0, 2}, {0, 3}, {1, 0}, {1, 2}, {1, 3}, {2, 0}, {2, 1}, {2, 3}},
-			{{3, 0}, {3, 1}, {3, 2}, {1, 0}, {1, 2}, {1, 3}, {0, 1}, {0, 2}, {0, 3}, {2, 0}, {2, 1}, {2, 3}},
-			{{0, 3}, {1, 3}, {2, 3}},
-		},
-	}
-
-	var k int
-	var kk int
-	var uni []int
-	var already bool
-
-	c = 0
-	timer_all = 0
-
-	for j = 0; j < len(comm); j++ {
-		for i = 0; i < len(ec); i++ {
-			completed, timer = consensus(comm[j], ec[i], grid)
-			if completed {
-				c += 1
-				timer_all += timer
-
-				for kk = 0; kk < len(ec[i]); kk++ {
-					already = false
-					for k = 0; k < len(uni); k++ {
-						if ec[i][kk] == uni[k] {
-							already = true
-						}
-					}
-					if !already {
-						uni = append(uni, ec[i][kk])
-					}
-				}
-
+		temp1 = [][]int{}
+		for j := 0; j < num_participants; j++ {
+			if i != j {
+				temp1 = append(temp1, []int{i, j})
 			}
 		}
+		temp = append(temp, temp1)
+
+		temp2 = [][]int{}
+		for j := 0; j < num_participants; j++ {
+			if i != j {
+				for k := 0; k < num_participants; k++ {
+					if j != k {
+						temp2 = append(temp2, []int{j, k})
+					}
+				}
+			}
+		}
+		temp = append(temp, temp2)
+
+		temp3 = [][]int{}
+		for j := 0; j < num_participants; j++ {
+			for k := 0; k < num_participants; k++ {
+				if j != k {
+					temp3 = append(temp3, []int{j, k})
+				}
+			}
+		}
+		temp = append(temp, temp3)
+
+		temp4 = [][]int{}
+		for j := 0; j < num_participants; j++ {
+			if i != j {
+				temp4 = append(temp4, []int{j, i})
+			}
+		}
+		temp = append(temp, temp4)
+
+		comm = append(comm, temp)
 	}
 
-	// if c == 0 {
-	// 	timer_all = 2881
-	// } else {
-	// 	timer_all = int(float64(timer_all) / float64(c))
-	// }
-	// fmt.Println(len(uni), num_sats)
-
-	return C.int(len(uni))
+	return comm
 }
 
-//export consensus_completeness_per_non_ga
-func consensus_completeness_per_non_ga(combs_raw *float64, combs_n int64, grid_raw *float64, grid_n int64, num_sats int64) C.int {
+//export consensus_completeness_per
+func consensus_completeness_per(combs_raw *float64, combs_n int64, grid_raw *float64, grid_n int64, num_sats int64, num_participants int64, output_size *C.int) *C.int {
 
 	var grid_flat []float64
 	var combs_flat []float64
 
-	var combs [][]float64
+	// var combs [][]float64
 	var grid [][][]float64
 
 	var comm [][][][]int
@@ -246,51 +205,15 @@ func consensus_completeness_per_non_ga(combs_raw *float64, combs_n int64, grid_r
 
 	grid_flat = unsafe.Slice(grid_raw, grid_n)
 
-	combs = convert_to_n_by_rest(combs_flat, 4) // 3 for ga, 4 for non_ga
-
-	for i = 0; i < len(combs); i++ {
-		// var temp = []int{0} // For ga analyses
-		var temp = []int{} // For non_ga analyses
-		for j = 0; j < len(combs[i]); j++ {
-			temp = append(temp, int(combs[i][j]))
-		}
-		if len(temp) == 4 {
-			ec = append(ec, temp)
-		}
-	}
+	ec = convert_to_n_by_rest(combs_flat, int(num_participants))
 
 	grid = convert_to_n_by_n_by_rest(grid_flat, int(num_sats))
 
-	comm = [][][][]int{
-		{
-			{{0, 1}, {0, 2}, {0, 3}},
-			{{1, 0}, {1, 2}, {1, 3}, {2, 0}, {2, 1}, {2, 3}, {3, 0}, {3, 1}, {3, 2}},
-			{{0, 1}, {0, 2}, {0, 3}, {1, 0}, {1, 2}, {1, 3}, {2, 0}, {2, 1}, {2, 3}, {3, 0}, {3, 1}, {3, 2}},
-			{{1, 0}, {2, 0}, {3, 0}},
-		},
-		{
-			{{1, 0}, {1, 2}, {1, 3}},
-			{{0, 1}, {0, 2}, {0, 3}, {2, 0}, {2, 1}, {2, 3}, {3, 0}, {3, 1}, {3, 2}},
-			{{1, 0}, {1, 2}, {1, 3}, {0, 1}, {0, 2}, {0, 3}, {2, 0}, {2, 1}, {2, 3}, {3, 0}, {3, 1}, {3, 2}},
-			{{0, 1}, {2, 1}, {3, 1}},
-		},
-		{
-			{{2, 0}, {2, 1}, {2, 3}},
-			{{0, 1}, {0, 2}, {0, 3}, {1, 0}, {1, 2}, {1, 3}, {3, 0}, {3, 1}, {3, 2}},
-			{{2, 0}, {2, 1}, {2, 3}, {1, 0}, {1, 2}, {1, 3}, {0, 1}, {0, 2}, {0, 3}, {3, 0}, {3, 1}, {3, 2}},
-			{{0, 2}, {1, 2}, {3, 2}},
-		},
-		{
-			{{3, 0}, {3, 1}, {3, 2}},
-			{{0, 1}, {0, 2}, {0, 3}, {1, 0}, {1, 2}, {1, 3}, {2, 0}, {2, 1}, {2, 3}},
-			{{3, 0}, {3, 1}, {3, 2}, {1, 0}, {1, 2}, {1, 3}, {0, 1}, {0, 2}, {0, 3}, {2, 0}, {2, 1}, {2, 3}},
-			{{0, 3}, {1, 3}, {2, 3}},
-		},
-	}
+	comm = get_comm(int(num_participants))
 
 	var k int
 	var kk int
-	var uni []int
+	var uni []int32
 	var already bool
 
 	c = 0
@@ -298,7 +221,7 @@ func consensus_completeness_per_non_ga(combs_raw *float64, combs_n int64, grid_r
 
 	for j = 0; j < len(comm); j++ {
 		for i = 0; i < len(ec); i++ {
-			completed, timer = consensus(comm[j], ec[i], grid)
+			completed, timer = consensus(comm[j], ec[i], grid, int(num_participants))
 			if completed {
 				c += 1
 				timer_all += timer
@@ -306,12 +229,12 @@ func consensus_completeness_per_non_ga(combs_raw *float64, combs_n int64, grid_r
 				for kk = 0; kk < len(ec[i]); kk++ {
 					already = false
 					for k = 0; k < len(uni); k++ {
-						if ec[i][kk] == uni[k] {
+						if ec[i][kk] == int(uni[k]) {
 							already = true
 						}
 					}
 					if !already {
-						uni = append(uni, ec[i][kk])
+						uni = append(uni, int32(ec[i][kk]))
 					}
 				}
 
@@ -319,12 +242,17 @@ func consensus_completeness_per_non_ga(combs_raw *float64, combs_n int64, grid_r
 		}
 	}
 
-	// if c == 0 {
-	// 	timer_all = 2881
-	// } else {
-	// 	timer_all = int(float64(timer_all) / float64(c))
-	// }
-	// fmt.Println(len(uni), num_sats)
+	*output_size = C.int(len(uni))
+	// fmt.Println(uni)
+	ptr := C.malloc(C.size_t(len(uni)) * C.size_t(unsafe.Sizeof(uni[0])))
 
-	return C.int(len(uni))
+	// Cast the allocated memory to a Go slice
+	cArray := (*[1<<30 - 1]int32)(ptr)[:len(uni):len(uni)]
+
+	// Copy Go numbers to the C-allocated memory
+	copy(cArray, uni)
+
+	// Return pointer to the C-allocated memory
+	return (*C.int)(unsafe.Pointer(ptr))
+
 }

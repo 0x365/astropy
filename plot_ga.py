@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from common import *
 
-data = load_json("data-ga/0_completed.json")
+data = load_json("data-ga/participants_4_startday_00_conntime_10.json")
 
 data = data[1:]
 
@@ -111,7 +111,7 @@ for i in range(20):
         pass
 without_data = np.array(without_data)
 
-for ii in ["01_", "05_", ""]:
+for ii in ["01_", "05_", "10_"]:
 
     data_all = []
     for_means = []
@@ -122,10 +122,10 @@ for ii in ["01_", "05_", ""]:
     elif ii == "05_":
         color_a = "green"
         timer = 4
-    elif ii == "":
+    elif ii == "10_":
         color_a = "blue"
         timer = -1
-    elif ii == "test_2_":
+    elif ii == "long_":
         color_a = "orange"
         timer = -1
 
@@ -168,9 +168,15 @@ for ii in ["01_", "05_", ""]:
 
         # First zero is day length 0.1, 0.5, 1
         ax7.plot(np.arange(len(mean_f))+1, mean_f, color=color_a, alpha=0.1)
+        # print(np.shape(mean_f))
+        if len(for_means) > 0:
+            padder = np.zeros(len(for_means[0])-len(mean_f))
+            padder[padder == 0] = np.nan
+            mean_f = np.append(mean_f, padder)
+        # print(np.shape(mean_f))
         for_means.append(mean_f)
     if len(for_means) > 0:
-        ax7.plot(np.arange(len(for_means[0]))+1, np.mean(for_means, axis=0), color=color_a, alpha=1)
+        ax7.plot(np.arange(len(for_means[0]))+1, np.nanmean(for_means, axis=0), color=color_a, alpha=1)
 
 plt.savefig("figures/ga/learning_orbit_elements.png")
 plt.clf()
@@ -187,7 +193,7 @@ plt.clf()
 
 scatter = True
 
-for iii in ["01_","05_", "", "test_2_"]:
+for iii in ["01_","05_", "10_"]:
     fig = plt.figure(figsize=(15,10), layout="tight")
     gs = plt.GridSpec(2, 3, height_ratios=[1, 1])
     ax1 = fig.add_subplot(gs[0, 0])
@@ -304,3 +310,88 @@ for iii in ["01_","05_", "", "test_2_"]:
 
     plt.savefig("figures/ga/"+iii+"trend_learning_orbit_elements.png")
     plt.clf()
+
+
+
+
+
+
+# Histogram of results
+
+fig = plt.figure(figsize=(15,10), layout="tight")
+gs = plt.GridSpec(2, 3, height_ratios=[1, 1])
+ax1 = fig.add_subplot(gs[0, 0])
+ax2 = fig.add_subplot(gs[0, 1])
+ax3 = fig.add_subplot(gs[0, 2])
+ax4 = fig.add_subplot(gs[1, 0])
+ax5 = fig.add_subplot(gs[1, 1])
+ax6 = fig.add_subplot(gs[1, 2])
+for iii in ["10_"]:#["01_","05_", "", "long_"]:
+    
+    axs = [ax1, ax2, ax3, ax4, ax5, ax6]
+    titles = ["Argument of Periapsis", "Eccentricity", "Inclination", "RAAN", "Mean Anomoly", "Mean Motion"]
+    ylabels = ["","","","","",""]
+
+    for i in range(len(axs)):
+        axs[i].set_title(titles[i])
+        axs[i].set_ylabel("Density of occurances in final population")
+        axs[i].set_xlabel(ylabels[i]+titles[i])
+
+    data_all = []
+    for i in range(10):
+        try:
+            data = load_json("data-ga/"+iii+str(i)+"_completed.json")
+            if iii != "test_2_":
+                data = data[1:]
+            data_all.append(data)
+        except:
+            break
+
+    final_argp = []
+    final_ecc = []
+    final_inc = []
+    final_raan = []
+    final_anom = []
+    final_mot = []
+    c = 0
+    for j in range(10):
+        try:
+            x = [xi["x"] for xi in data_all[j]]
+            f = [xi["f"] for xi in data_all[j]]
+            f = -np.array(f)
+            f = f.tolist()
+        except:
+            continue
+
+        argp = [[xii["argp_i"] for xii in xi] for xi in x]
+        ecc = [[np.log10(xii["ecc_i"]) for xii in xi] for xi in x]
+        inc = [[xii["inc_i"] for xii in xi] for xi in x]
+        raan = [[xii["raan_i"] for xii in xi] for xi in x]
+        anom = [[xii["anom_i"] for xii in xi] for xi in x]
+        mot = [[xii["mot_i"]/360 for xii in xi] for xi in x]
+
+        c += 1
+
+        final_argp = np.append(final_argp, argp[-1])
+        final_ecc = np.append(final_ecc, np.power(10,ecc[-1]))
+        final_inc = np.append(final_inc, inc[-1])
+        final_raan = np.append(final_raan, raan[-1])
+        final_anom = np.append(final_anom, anom[-1])
+        final_mot = np.append(final_mot, mot[-1])
+
+        # ax1.hist(argp, bins=np.linspace(-180, 180, 20))
+        # ax2.hist(np.power(10,ecc), bins=np.linspace(0, 0.14, 20))
+        # ax3.hist(inc, bins=np.linspace(-90, 90, 20))
+        # ax4.hist(raan, bins=np.linspace(-180, 180, 20))
+        # ax5.hist(anom, bins=np.linspace(-180, 180, 20))
+        # ax6.hist(mot, bins=np.linspace(4000/360, 6500/360, 20))
+
+    ax1.hist(final_argp, bins=np.linspace(-180, 180, 100), density=True)
+    ax2.hist(final_ecc, bins=np.linspace(0, 0.14, 100), density=True)
+    ax3.hist(final_inc, bins=np.linspace(-90, 90, 100), density=True)
+    ax4.hist(final_raan, bins=np.linspace(-180, 180, 100), density=True)
+    ax5.hist(final_anom, bins=np.linspace(-180, 180, 100), density=True)
+    ax6.hist(final_mot, bins=np.linspace(4000/360, 6500/360, 100), density=True)
+
+plt.savefig("figures/ga/histograms_of_results.png", dpi=500)
+plt.clf()

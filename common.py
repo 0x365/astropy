@@ -30,22 +30,26 @@ def csv_output(file_name, data_send):
         
     
 # Gets all icsmd satellites from tle file
-def get_icsmd_satellites(input_tle, refine_by_name):
+def get_satellites(input_tle, refine_by_name=None):
     ts = load.timescale()
 
     with load.open(input_tle) as f:
         satellites = list(parse_tle_file(f, ts))
 
-    with open(refine_by_name, "r") as f:
-        icsmd_sats = f.read().split("\n")
+    if refine_by_name != None:
+        with open(refine_by_name, "r") as f:
+            icsmd_sats = f.read().split("\n")
 
-    icsmd_sats = np.array(icsmd_sats)
-    satellites_updated = []
-    for sat in satellites:
-        if sat.name in icsmd_sats:
-            satellites_updated.append(sat)
+        icsmd_sats = np.array(icsmd_sats)
+        satellites_updated = []
+        for sat in satellites:
+            if sat.name in icsmd_sats:
+                satellites_updated.append(sat)
 
-    return satellites_updated
+        return satellites_updated
+    
+    else:
+        return satellites
 
 
 # Gets random selection of satellites from tle file

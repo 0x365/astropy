@@ -1,9 +1,10 @@
 # astropy
 
-This image displays the shape of all keplerian orbital elements for all current satellites.
-
 <img src="https://github.com/0x365/astropy/blob/main/perm_data/animation.gif" width="600" height="408"></img>
 
+### About
+
+To determine which trajectory/orbit this new satellite would have to follow, a way of simulating real satellite orbits and measuring how many satellites can complete PBFT consensus in a given time period is defined. A genetic algorithm that defines 6 Keplerian orbital parameters is then used to generate theoretical satellite orbits which are then propagated with the real satellite orbits to again check the number of satellites participants that can complete PBFT consensus in the given time period.
 
 
 

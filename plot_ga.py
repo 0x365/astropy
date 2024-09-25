@@ -6,9 +6,8 @@ from common import *
 
 def plot1():
 
-    data = load_json("data-ga/10_9_completed.json")
+    data = load_json("data-ga/participants_4_startday_00_conntime_10.json")
 
-    data = data[1:]
 
     x = [xi["x"] for xi in data]
     f = [xi["f"] for xi in data]
@@ -25,9 +24,7 @@ def plot1():
 
 
 
-
-
-    colors = plt.cm.viridis_r(np.linspace(0, 1, len(argp)))
+    colors = plt.cm.inferno_r(np.linspace(0, 1, len(argp)))
 
     fig = plt.figure(figsize=(10,12), layout="tight")
     gs = plt.GridSpec(3, 3, height_ratios=[1, 1, 1])
@@ -72,7 +69,7 @@ def plot1():
     plt.savefig("figures/ga/single_learning_orbit_elements.png")
     plt.clf()
 
-
+plot1()
 
 
 
@@ -104,47 +101,33 @@ def plot2():
     ax7.set_xlabel("Generation")
     ax7.set_ylabel("Number of Satellites")
 
-
-    # without_data_raw = load_json("with_without.json")
-    # without_data = []
-    # for i in range(20):
-    #     try:
-    #         without_data.append(without_data_raw[i]["1"]["no_sim"]["num_participants"])
-    #     except:
-    #         pass
-    # without_data = np.array(without_data)
     cmap = cm.inferno
     # norm = mcolors.Normalize(vmin=16, vmax=23)
     # 
-    for ii in ["01_", "05_", "10_"]:
+    for ii in ["01", "05", "10"]:
 
         data_all = []
         for_means = []
 
-        if ii == "01_":
+        if ii == "01":
             color_a = cmap(0.9)
             timer = 0
             nice_name = "0.1 days"
-        elif ii == "05_":
+        elif ii == "05":
             color_a = cmap(0.5)
             timer = 4
             nice_name = "0.5 days"
-        elif ii == "10_":
+        elif ii == "10":
             color_a = cmap(0.1)
             timer = -1
             nice_name = "1 day"
-        elif ii == "long_":
-            color_a = "orange"
-            timer = -1
         for_means = []
         data_all = []
         for i in range(10):
             try:
-                data = load_json("data-ga/"+ii+str(i)+"_completed.json")
-                # file_name = "data-ga/participants_5_startday_{:02d}".format(int(i))
-                # file_name += "_conntime_"+ii[:2]+".json"
-                # data = load_json(file_name)
-                data = data[1:]
+                file_name = "data-ga/participants_4_startday_{:02d}".format(int(i))
+                file_name += "_conntime_"+ii+".json"
+                data = load_json(file_name)
                 data_all.append(data)
             except:
                 break
@@ -179,7 +162,7 @@ def plot2():
             ax6.scatter(np.mean(mot,axis=1), mean_f, color=color_a, alpha=normalised_f)
 
             # First zero is day length 0.1, 0.5, 1
-            ax7.plot(np.arange(len(mean_f))+1, mean_f, color=color_a, alpha=0.2)
+            ax7.plot(np.arange(len(mean_f)), mean_f, color=color_a, alpha=0.2)
             # print(np.shape(mean_f))
             if len(for_means) > 0:
                 padder = np.zeros(len(for_means[0])-len(mean_f))
@@ -188,7 +171,7 @@ def plot2():
             # print(np.shape(mean_f))
             for_means.append(mean_f)
         if len(for_means) > 0:
-            ax7.plot(np.arange(len(for_means[0]))+1, np.nanmean(for_means, axis=0), color=color_a, alpha=1, label=nice_name)
+            ax7.plot(np.arange(len(for_means[0])), np.nanmean(for_means, axis=0), color=color_a, alpha=1, label=nice_name)
 
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=3)
     plt.savefig("figures/ga/learning_orbit_elements.png")
@@ -252,7 +235,6 @@ def plot3():
                 file_name = "data-ga/participants_"+str(ii)+"_startday_{:02d}".format(int(i))
                 file_name += "_conntime_01.json"
                 data = load_json(file_name)
-                data = data[1:]
                 data_all.append(data)
             except:
                 break
@@ -277,7 +259,7 @@ def plot3():
             mean_f_log = np.power(mean_f-np.nanmin(mean_f),40)
             normalised_f = (mean_f_log - np.nanmin(mean_f_log)) / (np.nanmax(mean_f_log) - np.nanmin(mean_f_log))
             normalised_f[np.isnan(normalised_f)] = 1
-            
+
             ax1.scatter(np.mean(argp,axis=1), mean_f, color=color_a, alpha=normalised_f)
 
             ax2.scatter(np.mean(ecc,axis=1), mean_f, color=color_a, alpha=normalised_f)
@@ -287,7 +269,7 @@ def plot3():
             ax6.scatter(np.mean(mot,axis=1), mean_f, color=color_a, alpha=normalised_f)
 
             # First zero is day length 0.1, 0.5, 1
-            ax7.plot(np.arange(len(mean_f))+1, mean_f, color=color_a, alpha=0.1)
+            ax7.plot(np.arange(len(mean_f)), mean_f, color=color_a, alpha=0.1)
             # print(np.shape(mean_f))
             if len(for_means) > 0:
                 padder = np.zeros(len(for_means[0])-len(mean_f))
@@ -296,7 +278,7 @@ def plot3():
             # print(np.shape(mean_f))
             for_means.append(mean_f)
         if len(for_means) > 0:
-            ax7.plot(np.arange(len(for_means[0]))+1, np.nanmean(for_means, axis=0), color=color_a, alpha=1, label=nice_name)
+            ax7.plot(np.arange(len(for_means[0])), np.nanmean(for_means, axis=0), color=color_a, alpha=1, label=nice_name)
 
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=3)
     plt.savefig("figures/ga/learning_orbit_elements_participant_compare.png")
@@ -318,69 +300,53 @@ plot3()
 
 
 
-"""
-scatter = True
+def plot4():
+    for iii in ["01","05", "10"]:
+        fig = plt.figure(figsize=(15,10), layout="tight")
+        gs = plt.GridSpec(2, 3, height_ratios=[1, 1])
+        ax1 = fig.add_subplot(gs[0, 0])
+        ax2 = fig.add_subplot(gs[0, 1])
+        ax3 = fig.add_subplot(gs[0, 2])
+        ax4 = fig.add_subplot(gs[1, 0])
+        ax5 = fig.add_subplot(gs[1, 1])
+        ax6 = fig.add_subplot(gs[1, 2])
 
-for iii in ["01_","05_", "10_"]:
-    fig = plt.figure(figsize=(15,10), layout="tight")
-    gs = plt.GridSpec(2, 3, height_ratios=[1, 1])
-    ax1 = fig.add_subplot(gs[0, 0])
-    ax2 = fig.add_subplot(gs[0, 1])
-    ax3 = fig.add_subplot(gs[0, 2])
-    ax4 = fig.add_subplot(gs[1, 0])
-    ax5 = fig.add_subplot(gs[1, 1])
-    ax6 = fig.add_subplot(gs[1, 2])
+        axs = [ax1, ax2, ax3, ax4, ax5, ax6]
+        titles = ["Argument of Periapsis", "Eccentricity", "Inclination", "RAAN", "Mean Anomoly", "Mean Motion"]
+        ylabels = ["","","","","",""]
 
-    axs = [ax1, ax2, ax3, ax4, ax5, ax6]
-    titles = ["Argument of Periapsis", "Eccentricity", "Inclination", "RAAN", "Mean Anomoly", "Mean Motion"]
-    ylabels = ["","","","","",""]
+        for i in range(len(axs)):
+            axs[i].set_title(titles[i])
+            axs[i].set_xlabel("Generation")
+            axs[i].set_ylabel(ylabels[i]+titles[i])
 
-    for i in range(len(axs)):
-        axs[i].set_title(titles[i])
-        axs[i].set_xlabel("Generation")
-        axs[i].set_ylabel(ylabels[i]+titles[i])
+        data_all = []
+        for i in range(10):
+            try:
+                file_name = "data-ga/participants_4_startday_{:02d}".format(int(i))
+                file_name += "_conntime_"+iii+".json"
+                data = load_json(file_name)
+                data_all.append(data)
+            except:
+                break
 
-    data_all = []
-    for i in range(10):
-        try:
-            data = load_json("data-ga/"+iii+str(i)+"_completed.json")
-            if iii != "test_2_":
-                data = data[1:]
-            data_all.append(data)
-        except:
-            break
+        for j in range(10):
+            try:
+                x = [xi["x"] for xi in data_all[j]]
+                f = [xi["f"] for xi in data_all[j]]
+                f = -np.array(f)
+                f = f.tolist()
+            except:
+                continue
+            print(iii)
 
-    for j in range(10):
-        try:
-            x = [xi["x"] for xi in data_all[j]]
-            f = [xi["f"] for xi in data_all[j]]
-            f = -np.array(f)
-            f = f.tolist()
-        except:
-            continue
-        print(iii)
+            argp = [[xii["argp_i"] for xii in xi] for xi in x]
+            ecc = [[np.log10(xii["ecc_i"]) for xii in xi] for xi in x]
+            inc = [[xii["inc_i"] for xii in xi] for xi in x]
+            raan = [[xii["raan_i"] for xii in xi] for xi in x]
+            anom = [[xii["anom_i"] for xii in xi] for xi in x]
+            mot = [[xii["mot_i"]/360 for xii in xi] for xi in x]
 
-        argp = [[xii["argp_i"] for xii in xi] for xi in x]
-        ecc = [[np.log10(xii["ecc_i"]) for xii in xi] for xi in x]
-        inc = [[xii["inc_i"] for xii in xi] for xi in x]
-        raan = [[xii["raan_i"] for xii in xi] for xi in x]
-        anom = [[xii["anom_i"] for xii in xi] for xi in x]
-        mot = [[xii["mot_i"]/360 for xii in xi] for xi in x]
-
-        if iii == "test_2_":
-            for i in range(len(argp)):
-                ax1.scatter([i]*len(argp[i]), argp[i], alpha=0.01)
-            for i in range(len(ecc)):
-                ax2.scatter([i]*len(ecc[i]), ecc[i], alpha=0.01)
-            for i in range(len(inc)):
-                ax3.scatter([i]*len(inc[i]), inc[i], alpha=0.01)
-            for i in range(len(raan)):
-                ax4.scatter([i]*len(raan[i]), raan[i], alpha=0.01)
-            for i in range(len(anom)):
-                ax5.scatter([i]*len(anom[i]), anom[i], alpha=0.01)
-            for i in range(len(mot)):
-                ax6.scatter([i]*len(mot[i]), mot[i], alpha=0.01)
-        elif scatter:
             for i in range(len(argp)):
                 ax1.scatter([i]*len(argp[i]), argp[i], alpha=0.005, c="black")
             for i in range(len(ecc)):
@@ -393,59 +359,22 @@ for iii in ["01_","05_", "10_"]:
                 ax5.scatter([i]*len(anom[i]), anom[i], alpha=0.005, c="black")
             for i in range(len(mot)):
                 ax6.scatter([i]*len(mot[i]), mot[i], alpha=0.005, c="black")
-        else:
-            stuff = []
-            for i in range(len(argp)):
-                stuff.append([i, np.mean(argp[i]), np.std(argp[i])])
-            stuff = np.array(stuff)
-            ax1.plot(stuff[:,0], stuff[:,1])
-            ax1.fill_between(stuff[:,0], stuff[:,1]-stuff[:,2], stuff[:,1]+stuff[:,2], alpha=0.2)
+            
+        plt.savefig("figures/ga/"+iii+"_trend_learning_orbit_elements.png")
+        plt.clf()
 
-            stuff = []
-            for i in range(len(ecc)):
-                stuff.append([i, np.mean(ecc[i]), np.std(ecc[i])])
-            stuff = np.array(stuff)
-            ax2.plot(stuff[:,0], stuff[:,1])
-            ax2.fill_between(stuff[:,0], stuff[:,1]-stuff[:,2], stuff[:,1]+stuff[:,2], alpha=0.2)
-
-            stuff = []
-            for i in range(len(ecc)):
-                stuff.append([i, np.mean(inc[i]), np.std(inc[i])])
-            stuff = np.array(stuff)
-            ax3.plot(stuff[:,0], stuff[:,1])
-            ax3.fill_between(stuff[:,0], stuff[:,1]-stuff[:,2], stuff[:,1]+stuff[:,2], alpha=0.2)
-
-            stuff = []
-            for i in range(len(ecc)):
-                stuff.append([i, np.mean(raan[i]), np.std(raan[i])])
-            stuff = np.array(stuff)
-            ax4.plot(stuff[:,0], stuff[:,1])
-            ax4.fill_between(stuff[:,0], stuff[:,1]-stuff[:,2], stuff[:,1]+stuff[:,2], alpha=0.2)
-
-            stuff = []
-            for i in range(len(ecc)):
-                stuff.append([i, np.mean(anom[i]), np.std(anom[i])])
-            stuff = np.array(stuff)
-            ax5.plot(stuff[:,0], stuff[:,1])
-            ax5.fill_between(stuff[:,0], stuff[:,1]-stuff[:,2], stuff[:,1]+stuff[:,2], alpha=0.2)
-
-            stuff = []
-            for i in range(len(ecc)):
-                stuff.append([i, np.mean(mot[i]), np.std(mot[i])])
-            stuff = np.array(stuff)
-            ax6.plot(stuff[:,0], stuff[:,1])
-            ax6.fill_between(stuff[:,0], stuff[:,1]-stuff[:,2], stuff[:,1]+stuff[:,2], alpha=0.2)
-
-    plt.savefig("figures/ga/"+iii+"trend_learning_orbit_elements.png")
-    plt.clf()
+plot4()
 
 
 
 
 
 
+
+
+
+"""
 # Histogram of results
-
 fig = plt.figure(figsize=(15,10), layout="tight")
 gs = plt.GridSpec(2, 3, height_ratios=[1, 1])
 ax1 = fig.add_subplot(gs[0, 0])

@@ -122,8 +122,8 @@ for day_number in tqdm(range(number_of_start_days)):
 
     for time_frame in [0.1,0.5,1]:
 
-        file_name = "data-ga/{:02d}".format(int(10*time_frame))
-        file_name += "_"+str(day_number)+"_completed.json"
+        file_name = "data-ga/participants_4_startday_{:02d}".format(int(day_number))
+        file_name += "_conntime_{:02d}.json".format(int(round(time_frame*10)))
         dataset = load_json(file_name)
         val = dataset[-1]["x"][np.argmin(dataset[-1]["f"])]
 

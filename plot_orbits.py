@@ -159,7 +159,8 @@ plt.clf()
 data_all = []
 for i in range(10):
     try:
-        data = load_json("data-ga/10_"+str(i)+"_completed.json")
+        file_name = "data-ga/participants_4_startday_{:02d}_conntime_10.json".format(int(i))
+        data = load_json(file_name)
         data = data[1:]
         data_all.append(data)
     except:

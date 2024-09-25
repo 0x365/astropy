@@ -119,7 +119,8 @@ for day_number in range(number_of_start_days):
     start_date = datetime.datetime(2024,9,11+day_number, tzinfo=utc)
     epoch = (start_date - datetime.datetime(1949,12,31,0,0, tzinfo=utc))
 
-    dataset = load_json("data-ga/10_"+str(day_number)+"_completed.json")
+    file_name = "data-ga/participants_4_startday_{:02d}_conntime_10.json".format(int(day_number))
+    dataset = load_json(file_name)
     val = dataset[-1]["x"][np.argmin(dataset[-1]["f"])]
     del dataset
     sim_sat = make_satellite(val, epoch, ts)

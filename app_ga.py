@@ -24,7 +24,7 @@ from ga_func import *
 ################## Parameters ##################
 
 pop_size = 200
-num_generations = 100
+num_generations = 50
 num_start_days = 10
 max_consensus_time = 0.1  # Days
 
@@ -65,7 +65,10 @@ class MyProblem(Problem):
         combs_raw = (ctypes.c_double * len(combs_arr)).from_buffer(combs_arr)
 
         self.possible = combs_raw
-        self.num_participants = np.shape(possible)[1]
+        if len(possible) > 0:
+            self.num_participants = np.shape(possible)[1]
+        else:
+            self.num_participants = 1
         self.real_sat_grid_flat = np.array(flatten_plus_one(real_sat_grid, time), dtype=float)
         self.depth = np.shape(real_sat_grid)[2]
         self.time = time
@@ -75,7 +78,10 @@ class MyProblem(Problem):
         f1 = []
         for orbit_elements in tqdm(x, desc="Consensus on population"):
             sim_sat = make_satellite(orbit_elements, epoch, ts)
-            completed = fitness(sim_sat, satellites, self.possible, self.real_sat_grid_flat.copy(), self.depth, self.time, self.num_participants)
+            if len(self.possible) > 0:
+                completed = fitness(sim_sat, satellites, self.possible, self.real_sat_grid_flat.copy(), self.depth, self.time, self.num_participants)
+            else:
+                completed = []
             f1.append(-len(completed))
         out["F"] = f1
 
@@ -117,7 +123,7 @@ for start_day_added in range(num_start_days):
 
     # Creates possible combinations from satellites that can see each other
     pos_last = gg.copy()
-    while np.shape(pos_last)[1] < num_participants:
+    while len(pos_last) > 0 and np.shape(pos_last)[1] < num_participants:
         pos = pos_last.copy()
         pos_last = []
         for item in pos:

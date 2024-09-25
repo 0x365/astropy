@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 from common import *
+from tqdm import tqdm
 
 def plot1():
 
@@ -88,18 +89,20 @@ def plot2():
     ax6 = fig.add_subplot(gs[1, 2])
     ax7 = fig.add_subplot(gs[2, :])
 
+    without_data = load_json("raw_results.json")
+
     axs = [ax1, ax2, ax3, ax4, ax5, ax6]
     titles = ["Argument of Periapsis", "Eccentricity", "Inclination", "RAAN", "Mean Anomoly", "Mean Motion"]
     ylabels = ["","Log10 of ","","","",""]
 
     for i in range(len(axs)):
         axs[i].set_title(titles[i])
-        axs[i].set_ylabel("Number of Satellites")
+        axs[i].set_ylabel("Increase in number of Satellites")
         axs[i].set_xlabel(ylabels[i]+titles[i])
 
-    ax7.set_title("Number of satellites that can complete consensus over generations")
+    ax7.set_title("Increase in number of satellites that can complete consensus over generations")
     ax7.set_xlabel("Generation")
-    ax7.set_ylabel("Number of Satellites")
+    ax7.set_ylabel("Increase in number of Satellites")
 
     cmap = cm.inferno
     # norm = mcolors.Normalize(vmin=16, vmax=23)
@@ -113,14 +116,17 @@ def plot2():
             color_a = cmap(0.9)
             timer = 0
             nice_name = "0.1 days"
+            cutter = "0.1"
         elif ii == "05":
             color_a = cmap(0.5)
             timer = 4
             nice_name = "0.5 days"
+            cutter = "0.5"
         elif ii == "10":
             color_a = cmap(0.1)
             timer = -1
             nice_name = "1 day"
+            cutter = "1"
         for_means = []
         data_all = []
         for i in range(10):
@@ -149,7 +155,7 @@ def plot2():
             anom = [[xii["anom_i"] for xii in xi] for xi in x]
             mot = [[xii["mot_i"]/360 for xii in xi] for xi in x]
 
-            mean_f = np.mean(f,axis=1)#-without_data[j,timer,0,0]
+            mean_f = np.mean(f,axis=1)-without_data[j][cutter]["no_sim"]["num_participants"]
             mean_f_log = np.power(mean_f-np.amin(mean_f),40)
             normalised_f = (mean_f_log - np.amin(mean_f_log)) / (np.amax(mean_f_log) - np.amin(mean_f_log))
 
@@ -162,7 +168,7 @@ def plot2():
             ax6.scatter(np.mean(mot,axis=1), mean_f, color=color_a, alpha=normalised_f)
 
             # First zero is day length 0.1, 0.5, 1
-            ax7.plot(np.arange(len(mean_f)), mean_f, color=color_a, alpha=0.2)
+            ax7.plot(np.arange(len(mean_f)), mean_f, color=color_a, alpha=0.1)
             # print(np.shape(mean_f))
             if len(for_means) > 0:
                 padder = np.zeros(len(for_means[0])-len(mean_f))
@@ -260,6 +266,8 @@ def plot3():
             normalised_f = (mean_f_log - np.nanmin(mean_f_log)) / (np.nanmax(mean_f_log) - np.nanmin(mean_f_log))
             normalised_f[np.isnan(normalised_f)] = 1
 
+            
+
             ax1.scatter(np.mean(argp,axis=1), mean_f, color=color_a, alpha=normalised_f)
 
             ax2.scatter(np.mean(ecc,axis=1), mean_f, color=color_a, alpha=normalised_f)
@@ -330,7 +338,7 @@ def plot4():
             except:
                 break
 
-        for j in range(10):
+        for j in tqdm(range(10), desc="Plotting time period "+str(iii)):
             try:
                 x = [xi["x"] for xi in data_all[j]]
                 f = [xi["f"] for xi in data_all[j]]
@@ -338,7 +346,6 @@ def plot4():
                 f = f.tolist()
             except:
                 continue
-            print(iii)
 
             argp = [[xii["argp_i"] for xii in xi] for xi in x]
             ecc = [[np.log10(xii["ecc_i"]) for xii in xi] for xi in x]
@@ -347,18 +354,20 @@ def plot4():
             anom = [[xii["anom_i"] for xii in xi] for xi in x]
             mot = [[xii["mot_i"]/360 for xii in xi] for xi in x]
 
+            dot_size = 4
+
             for i in range(len(argp)):
-                ax1.scatter([i]*len(argp[i]), argp[i], alpha=0.005, c="black")
+                ax1.scatter([i]*len(argp[i]), argp[i], alpha=0.005, c="black", s=dot_size)
             for i in range(len(ecc)):
-                ax2.scatter([i]*len(ecc[i]), np.power(10,ecc[i]), alpha=0.005, c="black")
+                ax2.scatter([i]*len(ecc[i]), np.power(10,ecc[i]), alpha=0.005, c="black", s=dot_size)
             for i in range(len(inc)):
-                ax3.scatter([i]*len(inc[i]), inc[i], alpha=0.005, c="black")
+                ax3.scatter([i]*len(inc[i]), inc[i], alpha=0.005, c="black", s=dot_size)
             for i in range(len(raan)):
-                ax4.scatter([i]*len(raan[i]), raan[i], alpha=0.005, c="black")
+                ax4.scatter([i]*len(raan[i]), raan[i], alpha=0.005, c="black", s=dot_size)
             for i in range(len(anom)):
-                ax5.scatter([i]*len(anom[i]), anom[i], alpha=0.005, c="black")
+                ax5.scatter([i]*len(anom[i]), anom[i], alpha=0.005, c="black", s=dot_size)
             for i in range(len(mot)):
-                ax6.scatter([i]*len(mot[i]), mot[i], alpha=0.005, c="black")
+                ax6.scatter([i]*len(mot[i]), mot[i], alpha=0.005, c="black", s=dot_size)
             
         plt.savefig("figures/ga/"+iii+"_trend_learning_orbit_elements.png")
         plt.clf()

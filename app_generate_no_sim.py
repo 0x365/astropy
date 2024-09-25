@@ -120,6 +120,7 @@ for day_number in tqdm(range(number_of_start_days)):
 
     global_frame_data = []
 
+    current_out = {}
     for time_frame in [0.1,0.5,1]:
 
         file_name = "data-ga/participants_4_startday_{:02d}".format(int(day_number))
@@ -151,7 +152,7 @@ for day_number in tqdm(range(number_of_start_days)):
 
         completed_with_sim = fitness_no_sim(satellites2, possible2, flat_sat_grid2)
 
-        out_data.append({
+        current_out.update({
             str(time_frame): {
                 "no_sim": {
                     "num_participants": len(completed_no_sim),
@@ -164,5 +165,6 @@ for day_number in tqdm(range(number_of_start_days)):
                 "best_sim_stats": val
             }
         })
+    out_data.append(current_out)
 
 save_json("raw_results.json", out_data)

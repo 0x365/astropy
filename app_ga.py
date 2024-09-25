@@ -24,7 +24,7 @@ from ga_func import *
 ################## Parameters ##################
 
 pop_size = 200
-num_generations = 50
+num_generations = 100
 num_start_days = 10
 max_consensus_time = 0.1  # Days
 

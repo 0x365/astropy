@@ -7,7 +7,7 @@ from skyfield.api import load, EarthSatellite
 
 # Function to evaluate the fitness of satellite communication by counting successful connections
 def fitness(sim_sat, satellites, possible, real_sat_grid, depth, time, num_participants):
-
+    # print(np.shape(time))
     # Ticcer = TicToc()
     # Ticcer.tic()
     library = ctypes.cdll.LoadLibrary("./go_fit.so")
@@ -25,7 +25,8 @@ def fitness(sim_sat, satellites, possible, real_sat_grid, depth, time, num_parti
     ]
     # print("Load Library")
     # Ticcer.toc()
-
+    ts = load.timescale()
+    time = ts.from_datetimes(time)
     # Ticcer.tic()
     for i in range(1,len(satellites)+1):
         x = np.where((sim_sat.at(time) - satellites[i-1].at(time)).distance().km <= 500)[0]

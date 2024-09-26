@@ -25,7 +25,7 @@ axes = axes.flatten()
 c = 0
 
 cmap = cm.inferno
-norm = mcolors.Normalize(vmin=16, vmax=23)
+norm = mcolors.Normalize(vmin=16, vmax=26)
 
 for comb in tqdm(list(combinati)):
 

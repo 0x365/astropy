@@ -5,75 +5,75 @@ import matplotlib.colors as mcolors
 from common import *
 from tqdm import tqdm
 
-def plot1():
+# def plot1():
 
-    data = load_json("data-ga/participants_4_startday_00_conntime_10.json")
-
-
-    x = [xi["x"] for xi in data]
-    f = [xi["f"] for xi in data]
-    # f = f*2
-    f = -np.array(f)
-    f = f.tolist()
-
-    argp = [[xii["argp_i"] for xii in xi] for xi in x]
-    ecc = [[np.log10(xii["ecc_i"]) for xii in xi] for xi in x]
-    inc = [[xii["inc_i"] for xii in xi] for xi in x]
-    raan = [[xii["raan_i"] for xii in xi] for xi in x]
-    anom = [[xii["anom_i"] for xii in xi] for xi in x]
-    mot = [[xii["mot_i"] for xii in xi] for xi in x]
+#     data = load_json("data-ga/participants_4_startday_00_conntime_10.json")
 
 
+#     x = [xi["x"] for xi in data]
+#     f = [xi["f"] for xi in data]
+#     # f = f*2
+#     f = -np.array(f)
+#     f = f.tolist()
 
-    colors = plt.cm.inferno_r(np.linspace(0, 1, len(argp)))
-
-    fig = plt.figure(figsize=(10,12), layout="tight")
-    gs = plt.GridSpec(3, 3, height_ratios=[1, 1, 1])
-
-    ax1 = fig.add_subplot(gs[0, 0])
-    ax1.set_title("Argument of Periapsis")
-    for i in range(len(argp)):
-        ax1.scatter(argp[i], f[i], color=colors[i])
-
-    ax2 = fig.add_subplot(gs[0, 1])
-    ax2.set_title("Eccentricity")
-    for i in range(len(ecc)):
-        ax2.scatter((ecc[i]), f[i], color=colors[i])
-
-    ax3 = fig.add_subplot(gs[0, 2])
-    ax3.set_title("Inclination")
-    for i in range(len(inc)):
-        ax3.scatter(inc[i], f[i], color=colors[i])
-
-    ax4 = fig.add_subplot(gs[1, 0])
-    ax4.set_title("RAAN")
-    for i in range(len(raan)):
-        ax4.scatter(raan[i], f[i], color=colors[i])
-
-    ax5 = fig.add_subplot(gs[1, 1])
-    ax5.set_title("Mean Anomoly")
-    for i in range(len(anom)):
-        ax5.scatter(anom[i], f[i], color=colors[i])
-
-    ax6 = fig.add_subplot(gs[1, 2])
-    ax6.set_title("Mean Motion")
-    for i in range(len(mot)):
-        ax6.scatter(np.array(mot[i])/360, f[i], color=colors[i])
-
-    ax7 = fig.add_subplot(gs[2, :])
-    ax7.set_title("Fitness over generations")
-    ax7.set_xlabel("Generation")
-    ax7.set_ylabel("Fitness")
-    for i in range(len(f)):
-        ax7.scatter([i]*len(f[i]), f[i], color=colors[i])
-
-    plt.savefig("figures/ga/single_learning_orbit_elements.png")
-    plt.clf()
-
-plot1()
+#     argp = [[xii["argp_i"] for xii in xi] for xi in x]
+#     ecc = [[np.log10(xii["ecc_i"]) for xii in xi] for xi in x]
+#     inc = [[xii["inc_i"] for xii in xi] for xi in x]
+#     raan = [[xii["raan_i"] for xii in xi] for xi in x]
+#     anom = [[xii["anom_i"] for xii in xi] for xi in x]
+#     mot = [[xii["mot_i"] for xii in xi] for xi in x]
 
 
 
+#     colors = plt.cm.inferno_r(np.linspace(0, 1, len(argp)))
+
+#     fig = plt.figure(figsize=(10,12), layout="tight")
+#     gs = plt.GridSpec(3, 3, height_ratios=[1, 1, 1])
+
+#     ax1 = fig.add_subplot(gs[0, 0])
+#     ax1.set_title("Argument of Periapsis")
+#     for i in range(len(argp)):
+#         ax1.scatter(argp[i], f[i], color=colors[i])
+
+#     ax2 = fig.add_subplot(gs[0, 1])
+#     ax2.set_title("Eccentricity")
+#     for i in range(len(ecc)):
+#         ax2.scatter((ecc[i]), f[i], color=colors[i])
+
+#     ax3 = fig.add_subplot(gs[0, 2])
+#     ax3.set_title("Inclination")
+#     for i in range(len(inc)):
+#         ax3.scatter(inc[i], f[i], color=colors[i])
+
+#     ax4 = fig.add_subplot(gs[1, 0])
+#     ax4.set_title("RAAN")
+#     for i in range(len(raan)):
+#         ax4.scatter(raan[i], f[i], color=colors[i])
+
+#     ax5 = fig.add_subplot(gs[1, 1])
+#     ax5.set_title("Mean Anomoly")
+#     for i in range(len(anom)):
+#         ax5.scatter(anom[i], f[i], color=colors[i])
+
+#     ax6 = fig.add_subplot(gs[1, 2])
+#     ax6.set_title("Mean Motion")
+#     for i in range(len(mot)):
+#         ax6.scatter(np.array(mot[i])/360, f[i], color=colors[i])
+
+#     ax7 = fig.add_subplot(gs[2, :])
+#     ax7.set_title("Fitness over generations")
+#     ax7.set_xlabel("Generation")
+#     ax7.set_ylabel("Fitness")
+#     for i in range(len(f)):
+#         ax7.scatter([i]*len(f[i]), f[i], color=colors[i])
+
+#     plt.savefig("figures/ga/single_learning_orbit_elements.png")
+#     plt.clf()
+
+# plot1()
+
+
+############### Learning plot fitness evaluation Plots ###############
 def plot2():
 
     fig = plt.figure(figsize=(10,12), layout="tight")
@@ -191,7 +191,7 @@ plot2()
 
 
 
-
+############### Number of participant comparison Plot ###############
 def plot3():
 
     fig = plt.figure(figsize=(10,12), layout="tight")
@@ -307,7 +307,7 @@ plot3()
 
 
 
-
+############### Scatter Plots ###############
 def plot4():
     for iii in ["01","05", "10"]:
         fig = plt.figure(figsize=(15,10), layout="tight")

@@ -82,7 +82,7 @@ plt.savefig(save_location+"/orbital_elements_of_all_sats.png")
 
 
 
-satellites = get_icsmd_satellites(open_location+"/active.tle", "icsmd_sats.txt")
+satellites = get_satellites(open_location+"/active.tle", refine_by_name="icsmd_sats.txt")
 # satellites = get_random_satellites(open_location+"/active.tle")
 
 

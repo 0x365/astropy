@@ -87,34 +87,8 @@ def build_grid(satellites, time, num_participants=4):
                 x = np.where((big_comb[i].at(time) - big_comb[j].at(time)).distance().km <= 500)[0]
                 real_sat_grid[i,j,:len(x)] = x
                 real_sat_grid[j,i,:len(x)] = x
-                # if len(x) > 0:# and j > i:
-                #     # gg.append([i+1,j+1])
-                #     gg.append([i,j])
-
-    # for i in range(len(satellites)):
-        # gg.append([0,i+1])
-    # gg = np.array(gg)
-    # print("Build positions")
-    # Ticcer.toc()
-
-    # Ticcer.tic()
-    # pos_last = gg.copy()
-    # while len(pos_last) > 0 and np.shape(pos_last)[1] < num_participants:
-    #     pos = pos_last.copy()
-    #     pos_last = []
-    #     for item in pos:
-    #         x_vals = []
-    #         for itemx in item:
-    #             x_vals.append(np.unique(np.append(gg[gg[:,0] == itemx, 1], gg[gg[:,1] == itemx, 0])))
-    #         for x in reduce(np.intersect1d, x_vals):
-    #             pos_last.append([*item, x])
-
-    # possible = np.array(pos_last)
-    # print("Build combinations")
-    # Ticcer.toc()
 
     possible = np.array(list(itertools.combinations(np.arange(0,len(satellites)), 4)))
-
 
     return real_sat_grid, possible
 
@@ -126,7 +100,29 @@ def build_grid(satellites, time, num_participants=4):
 for day_number in range(number_of_start_days):
 
     start_date = datetime.datetime(2024,9,11+day_number, tzinfo=utc)
-    # epoch = (start_date - datetime.datetime(1949,12,31,0,0, tzinfo=utc))
+    end_date = start_date + relativedelta(days=0.1)
+    time_range = date_range(start_date, end_date, 30, 'seconds')
+    time = ts.from_datetimes(time_range)
+
+    real_sat_grid_og, possible = build_grid(satellites, time)
+
+    stacker_no_sim = []
+    for frame in tqdm(np.linspace(0,24*60*0.1,12), desc="Sim day "+str(day_number)+" | No sim gen"):
+
+        if frame > 0:
+            real_sat_grid = real_sat_grid_og.copy()
+            real_sat_grid[real_sat_grid > frame*2] = -1
+            while np.all(real_sat_grid[:,:,-1] == -1):
+                real_sat_grid = real_sat_grid[:,:,:-1]
+            flat_sat_grid = np.array(flattener(real_sat_grid), dtype=float)
+
+            completed_no_sim = fitness_no_sim(satellites, possible, flat_sat_grid)
+        else:
+            completed_no_sim = []
+        
+        stacker_no_sim.append(completed_no_sim)
+
+
     for start_day in [0,1,2,3,4,5,6,7,8,9,"special", "special2"]:
         if start_day == "special" or start_day == "special2":
             file_name = "data-ga/participants_4_startday_"+start_day+"_conntime_01.json"
@@ -145,23 +141,11 @@ for day_number in range(number_of_start_days):
         global_frame_data = []
 
 
-        end_date = start_date + relativedelta(days=0.1)
-        time_range = date_range(start_date, end_date, 30, 'seconds')
-        time = ts.from_datetimes(time_range)
-
-        real_sat_grid_og, possible = build_grid(satellites, time)
         real_sat_grid_og_2, possible2 = build_grid(satellites2, time)
 
-        for frame in tqdm(range(0,int(24*60*0.1),12), desc="Day "+str(day_number)+" Gen day "+str(start_day)):
+        for i, frame in enumerate(tqdm(np.linspace(0,24*60*0.1,12), desc="Sim day "+str(day_number)+" | Opt day "+str(start_day))):
 
             if frame > 0:
-                real_sat_grid = real_sat_grid_og.copy()
-                real_sat_grid[real_sat_grid > frame*2] = -1
-                while np.all(real_sat_grid[:,:,-1] == -1):
-                    real_sat_grid = real_sat_grid[:,:,:-1]
-                flat_sat_grid = np.array(flattener(real_sat_grid), dtype=float)
-
-                completed_no_sim = fitness_no_sim(satellites, possible, flat_sat_grid)
 
                 real_sat_grid_2 = real_sat_grid_og_2.copy()
                 real_sat_grid_2[real_sat_grid_2 > frame*2] = -1
@@ -172,7 +156,6 @@ for day_number in range(number_of_start_days):
                 completed_with_sim = fitness_no_sim(satellites2, possible2, flat_sat_grid_2)
 
             else:
-                completed_no_sim = []
                 completed_with_sim = []
         
 
@@ -191,7 +174,7 @@ for day_number in range(number_of_start_days):
 
             global_frame_data.append({
                 "time_minutes": frame,
-                "completed_no_sim": completed_no_sim,
+                "completed_no_sim": stacker_no_sim[i],
                 "completed_with_sim": completed_with_sim,
                 "position_no_sim": all_starts_no_sim.tolist(),
                 "position_of_sim": all_starts_with_sim.tolist(),

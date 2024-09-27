@@ -1,6 +1,9 @@
 # astropy
 
+
+<img src="https://github.com/0x365/astropy/blob/main/perm_data/all.png" width="600" height="600"></img>
 <img src="https://github.com/0x365/astropy/blob/main/perm_data/animation.gif" width="600" height="408"></img>
+<img src="https://github.com/0x365/astropy/blob/main/perm_data/special_trend_learning_orbit_elements.png" width="600" height="408"></img>
 
 ### About
 

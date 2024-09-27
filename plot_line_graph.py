@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import itertools 
 import matplotlib.animation as animation
+import matplotlib.cm as cm
 
 from skyfield.api import load, EarthSatellite
 from skyfield.iokit import parse_tle_file
@@ -15,6 +16,8 @@ import ctypes
 from array import array
 
 from common import *
+
+timesteps = 25
 
 
 open_location = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data-animation")
@@ -28,7 +31,7 @@ ccc = 0
 plt.figure(figsize=(6.5,4), layout="constrained")
 meaner = []
 all_data = []
-for ii in [0,1,2,3,4,5,6,7,8,9,"special", "special2"]:
+for ii in [0,1,2,3,4,5,6,7,8,9, "special2"]:
     all_plots = []
     try:
         for i in range(10):
@@ -39,14 +42,18 @@ for ii in [0,1,2,3,4,5,6,7,8,9,"special", "special2"]:
 
             plot_data = []
             plot_data2 = []
-            time_data = np.linspace(0,24*60*0.1,12)/(24*60)
+            time_data = np.linspace(0,24*60*0.1,timesteps)/(24*60)
 
-            for frame in range(len(animation_data)):
+            for frame in range(timesteps):
 
                 # print("Frame number:", frame)
+                try:
 
-                completed_no_sim = np.array(animation_data[frame]["completed_no_sim"])
-                completed_with_sim = np.array(animation_data[frame]["completed_with_sim"])  
+                    completed_no_sim = np.array(animation_data[frame]["completed_no_sim"])
+                    completed_with_sim = np.array(animation_data[frame]["completed_with_sim"])  
+                except:
+                    completed_no_sim = []
+                    completed_with_sim = []
 
                 # time_data.append(animation_data[frame]["time_minutes"]/(24*60))
 
@@ -66,7 +73,6 @@ for ii in [0,1,2,3,4,5,6,7,8,9,"special", "special2"]:
             
             all_plots.append([plot_data, plot_data2])
             if ii == "special" or ii == "special2":
-                if ii == "special2":
                     plt.plot(time_data, np.array(plot_data2)-np.array(plot_data), color="crimson", alpha=0.1)
             else:
                 if ccc == 0:
@@ -76,13 +82,12 @@ for ii in [0,1,2,3,4,5,6,7,8,9,"special", "special2"]:
                     plt.plot(time_data, np.array(plot_data2)-np.array(plot_data), color="black", alpha=0.03)
         all_plots = np.array(all_plots)
         if ii == "special" or ii == "special2":
-            if len(all_plots) > 0 and ii == "special2":
+            if len(all_plots) > 0:
                 plt.plot(time_data, np.mean(all_plots[:,1]-all_plots[:,0],axis=0), color="crimson", label="Mean of multi-day optimised", alpha=1)
         else:
             # plt.plot(time_data, np.mean(all_plots[:,1]-all_plots[:,0],axis=0), color="black", alpha=0.1)
             meaner.append(np.mean(all_plots[:,1]-all_plots[:,0],axis=0))
-        if ii != "special":
-            all_data.append(all_plots)    
+        all_data.append(all_plots)    
     except:
         pass
 
@@ -100,31 +105,33 @@ plt.clf()
 
 all_data = np.array(all_data)
 all_data = all_data[:,:,1] - all_data[:,:,0]
-print(np.shape(all_data))
+
 
 # Axis 0 - Each Opt day
 # Axis 1 - For each sim day
 # Axis 2 - Each timestep
 
 all_data = all_data.reshape(all_data.shape[0], -1)
-
-plt.figure(figsize=(10, 6),layout="tight")
 all_data = np.swapaxes(all_data,0,1)
-width = 0.8
-width = [width,width,width,width,width,width,width,width,width,width,width]
-parts = plt.violinplot(all_data, widths=width, showmeans=True, showmedians=False, showextrema=False)
+print(np.shape(all_data))
+
+
+all_data = [all_data[:,:-1].flatten(), all_data[:,-1]]
+
+
+plt.figure(figsize=(6, 6),layout="tight")
+parts = plt.violinplot(all_data, [0,0.6], showmeans=True, showmedians=False, showextrema=False)
+# width = 0.8
+# width = [width,width,width,width,width,width,width,width,width,width,width]
+# parts = plt.violinplot(all_data, widths=width, showmeans=True, showmedians=False, showextrema=False)
 
 # Customize the appearance
 for pc in parts['bodies']:
-    pc.set_facecolor('steelblue')  # Set color of the violins
-    # pc.set_edgecolor('black')      # Set edge color
+    pc.set_facecolor(cm.inferno(0.5))  # Set color of the violins
+    pc.set_edgecolor('black')      # Set edge color
     pc.set_alpha(1) 
 
-x_marker = [""]
-for i in range(10):
-    x_marker.append("Opt Day "+str(i+1))
-x_marker.append("Opt All Days")
-plt.xticks(np.arange(12), x_marker, rotation=45)
+plt.xticks([0,0.6], ["Individiual days optimised", "All days optimised"])
 plt.xlabel('Day the Genetic Algorithm solved the orbital elements on')
 plt.ylabel('Number of extra satellites able to participate in consensus')
 plt.title('Number of extra satellites able to participate from each solution')

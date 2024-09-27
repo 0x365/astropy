@@ -217,12 +217,12 @@ def plot3():
 
     for i in range(len(axs)):
         axs[i].set_title(titles[i])
-        axs[i].set_ylabel("Number of Satellites")
+        axs[i].set_ylabel("Increase in number of satellites")
         axs[i].set_xlabel(ylabels[i]+titles[i])
 
-    ax7.set_title("Number of satellites that can complete consensus over generations")
+    ax7.set_title("Increase in number of satellites that can complete consensus over generations")
     ax7.set_xlabel("Generation")
-    ax7.set_ylabel("Number of Satellites")
+    ax7.set_ylabel("Increase in number of satellites")
 
 
     cmap = cm.inferno
@@ -265,7 +265,7 @@ def plot3():
             anom = [[xii["anom_i"] for xii in xi] for xi in x]
             mot = [[xii["mot_i"]/360 for xii in xi] for xi in x]
 
-            mean_f = np.nanmean(f,axis=1)#-without_data[j,timer,0,0]
+            mean_f = np.nanmean(f,axis=1)-np.amin(f[0])#-without_data[j,timer,0,0]
             mean_f_log = np.power(mean_f-np.nanmin(mean_f),40)
             normalised_f = (mean_f_log - np.nanmin(mean_f_log)) / (np.nanmax(mean_f_log) - np.nanmin(mean_f_log))
             normalised_f[np.isnan(normalised_f)] = 1
@@ -426,18 +426,20 @@ def plot_special_scatter():
 
     dot_size = 4
 
+    alpha_val = 0.1
+
     for i in range(len(argp)):
-        ax1.scatter([i]*len(argp[i]), argp[i], alpha=0.05, c="black", s=dot_size)
+        ax1.scatter([i]*len(argp[i]), argp[i], alpha=alpha_val, c="black", s=dot_size)
     for i in range(len(ecc)):
-        ax2.scatter([i]*len(ecc[i]), np.power(10,ecc[i]), alpha=0.05, c="black", s=dot_size)
+        ax2.scatter([i]*len(ecc[i]), np.power(10,ecc[i]), alpha=alpha_val, c="black", s=dot_size)
     for i in range(len(inc)):
-        ax3.scatter([i]*len(inc[i]), inc[i], alpha=0.05, c="black", s=dot_size)
+        ax3.scatter([i]*len(inc[i]), inc[i], alpha=alpha_val, c="black", s=dot_size)
     for i in range(len(raan)):
-        ax4.scatter([i]*len(raan[i]), raan[i], alpha=0.05, c="black", s=dot_size)
+        ax4.scatter([i]*len(raan[i]), raan[i], alpha=alpha_val, c="black", s=dot_size)
     for i in range(len(anom)):
-        ax5.scatter([i]*len(anom[i]), anom[i], alpha=0.05, c="black", s=dot_size)
+        ax5.scatter([i]*len(anom[i]), anom[i], alpha=alpha_val, c="black", s=dot_size)
     for i in range(len(mot)):
-        ax6.scatter([i]*len(mot[i]), mot[i], alpha=0.05, c="black", s=dot_size)
+        ax6.scatter([i]*len(mot[i]), mot[i], alpha=alpha_val, c="black", s=dot_size)
         
     plt.savefig("figures/ga/special_trend_learning_orbit_elements.png")
     plt.clf()

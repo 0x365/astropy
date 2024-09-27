@@ -26,6 +26,7 @@ if not os.path.exists(save_location):
     os.makedirs(save_location)
 
 number_of_start_days = 10
+timesteps = 25
 
 os.system("go build -buildmode=c-shared -o ./go_fit.so .")
 
@@ -107,7 +108,7 @@ for day_number in range(number_of_start_days):
     real_sat_grid_og, possible = build_grid(satellites, time)
 
     stacker_no_sim = []
-    for frame in tqdm(np.linspace(0,24*60*0.1,12), desc="Sim day "+str(day_number)+" | No sim gen"):
+    for frame in tqdm(np.linspace(0,24*60*0.1,timesteps), desc="Sim day "+str(day_number)+" | No sim gen"):
 
         if frame > 0:
             real_sat_grid = real_sat_grid_og.copy()
@@ -143,7 +144,7 @@ for day_number in range(number_of_start_days):
 
         real_sat_grid_og_2, possible2 = build_grid(satellites2, time)
 
-        for i, frame in enumerate(tqdm(np.linspace(0,24*60*0.1,12), desc="Sim day "+str(day_number)+" | Opt day "+str(start_day))):
+        for i, frame in enumerate(tqdm(np.linspace(0,24*60*0.1,timesteps), desc="Sim day "+str(day_number)+" | Opt day "+str(start_day))):
 
             if frame > 0:
 

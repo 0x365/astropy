@@ -24,9 +24,10 @@ save_location = os.path.join(os.path.dirname(os.path.abspath(__file__)), "figure
 if not os.path.exists(save_location):
     os.makedirs(save_location)
 
+ccc = 0
 plt.figure(figsize=(6.5,4), layout="constrained")
 meaner = []
-for ii in [0,1,2,3,4,5,6,7,8,9,"special"]:
+for ii in [0,1,2,3,4,5,6,7,8,9,"special", "special2"]:
     all_plots = []
     try:
         for i in range(10):
@@ -61,13 +62,13 @@ for ii in [0,1,2,3,4,5,6,7,8,9,"special"]:
                     plot_data2.append(adder)
                 else:
                     plot_data2.append(0)
-
+            
             all_plots.append([plot_data, plot_data2])
-
         all_plots = np.array(all_plots)
-        print(np.shape(all_plots))
-        if ii == "special":
-            plt.plot(time_data, np.mean(all_plots[:,1]-all_plots[:,0],axis=0), color="crimson", label="Mean - Special")
+        if ii == "special" or ii == "special2":
+            if len(all_plots) > 0:
+                plt.plot(time_data, np.mean(all_plots[:,1]-all_plots[:,0],axis=0), color=["crimson","gold"][ccc], label="Mean - "+ii, alpha=0.5)
+                ccc += 1
         else:
             plt.plot(time_data, np.mean(all_plots[:,1]-all_plots[:,0],axis=0), color="black", alpha=0.1)
             meaner.append(np.mean(all_plots[:,1]-all_plots[:,0],axis=0))

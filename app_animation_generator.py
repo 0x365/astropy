@@ -127,9 +127,9 @@ for day_number in range(number_of_start_days):
 
     start_date = datetime.datetime(2024,9,11+day_number, tzinfo=utc)
     # epoch = (start_date - datetime.datetime(1949,12,31,0,0, tzinfo=utc))
-    for start_day in [0,1,2,3,4,5,6,7,8,9,"special"]:
-        if start_day == "special":
-            file_name = "data-ga/participants_4_startday_special_conntime_01.json"
+    for start_day in [0,1,2,3,4,5,6,7,8,9,"special", "special2"]:
+        if start_day == "special" or start_day == "special2":
+            file_name = "data-ga/participants_4_startday_"+start_day+"_conntime_01.json"
             gen_date = datetime.datetime(2024,9,11, tzinfo=utc)
         else:
             file_name = "data-ga/participants_4_startday_{:02d}_conntime_01.json".format(int(start_day))

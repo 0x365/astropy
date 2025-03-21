@@ -1,0 +1,16 @@
+venv
+data
+ml
+n-body-ml
+*.pth
+data-np-1ms-line
+data-np-2ms-line
+data-np-2ms-triangle
+data-np-2ms-square
+data-np-4ms-triangle
+data-np-4ms-square
+data-np
+
+
+/*.png
+*.gif

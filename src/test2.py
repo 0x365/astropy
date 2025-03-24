@@ -113,13 +113,39 @@ for i in tqdm(range(np.shape(grid)[0]), desc="Test against selected orbit"):
         grid_out[i,j] = np.nanmean(setter)
 
 
+lower_bound = 0.1
+upper_bound = np.power(10,2)
+
+
+# grid_out = np.log10(grid_out)
+grid_out[grid_out <= 0] = np.nan
+grid_out[grid_out >= np.power(10,20)] = np.nan
 
 plt.imshow(grid_out)
 plt.colorbar()
 plt.savefig("test_selected_orbit.png",dpi=300)
 plt.clf()
 
-grid_out = (grid_out-np.nanmin(grid_out)) + 0.00000001
-grid_out = grid_out[~np.isnan(grid_out)]
-plt.hist(grid_out.flatten(), bins=np.logspace(np.log10(np.nanmin(grid_out)),np.log10(np.nanmax(grid_out)), 50))
+
+
+# Simple
+hist_bins_simple = np.linspace(0,np.power(10,upper_bound),200)
+plt.hist(grid_out.flatten(), bins=hist_bins_simple, alpha=0.5)
+
+
+# Log
+# hist_bins_log = np.logspace(np.log10(lower_bound),np.log10(upper_bound),200)
+# plt.hist(grid_out.flatten(), bins=hist_bins_log, alpha=0.5)
+# grid_out[grid_out <= 3] = np.nan
+# plt.hist(grid_out.flatten(), bins=hist_bins_log, alpha=0.5)
+# plt.xscale("log")
+
+
 plt.savefig("hist_test.png")
+plt.clf()
+
+
+plt.imshow(grid_out)
+plt.colorbar()
+plt.savefig("test_selected_orbit_refined.png",dpi=300)
+plt.clf()

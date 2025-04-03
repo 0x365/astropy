@@ -156,9 +156,14 @@ func main() {
 	fmt.Println("Hi")
 	// fmt.Println(step())
 
-	total_num := 100
+	x_start_num := 0
+	x_end_num := 50
+	y_start_num := -50
+	y_end_num := 0
 
-	bar := progressbar.Default(2 * int64(total_num) * 2 * int64(total_num))
+	total_num := 200
+
+	bar := progressbar.Default(int64(math.Abs(float64(x_start_num)-float64(x_end_num))) * int64(math.Abs(float64(y_start_num)-float64(y_end_num))))
 
 	var v_1 float64
 	var v_2 float64
@@ -188,9 +193,11 @@ func main() {
 	d3 := 1.3512
 
 	// sqrt3 := math.Sqrt(3.0)
+	for v1 = x_start_num; v1 <= x_end_num; v1++ {
+		for v2 = y_start_num; v2 <= y_end_num; v2++ {
 
-	for v1 = -total_num; v1 <= total_num; v1++ {
-		for v2 = -total_num; v2 <= total_num; v2++ {
+			// for v1 = -total_num; v1 <= total_num; v1++ {
+			// 		for v2 = -total_num; v2 <= total_num; v2++ {
 
 			all_values = [][]string{}
 
@@ -225,7 +232,7 @@ func main() {
 
 			all_values = append(all_values, y_string)
 
-			for i = 1; i < 3000; i++ {
+			for i = 0; i < 10000-4; i++ {
 
 				x = arr_a(x, arr_m(v, c1*dt))
 				v = arr_a(v, arr_m(get_acceleration4(x), dt*d1))
@@ -242,8 +249,9 @@ func main() {
 				// for j = 0; j < len(v); j++ {
 				// 	y_string = append(y_string, strconv.FormatFloat(v[j], 'f', -1, 64))
 				// }
-
-				all_values = append(all_values, y_string)
+				if i%4 == 0 {
+					all_values = append(all_values, y_string)
+				}
 			}
 			save_to_csv(all_values, v_1, v_2)
 			bar.Add(1)

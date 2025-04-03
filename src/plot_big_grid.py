@@ -2,13 +2,20 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-big_grid_out = np.load("big_grid_out.npy")
+big_grid_out = np.load("big_grid_out_w1.npy")
 
 fig = plt.figure(figsize=(16,15), layout="constrained")
 
 
 big_grid_out = np.delete(big_grid_out, np.arange(50, big_grid_out.shape[0], 50), axis=0)
 big_grid_out = np.delete(big_grid_out, np.arange(50, big_grid_out.shape[0], 50), axis=1)
+
+
+# big_grid_out = np.delete(big_grid_out, [49,50,51,99,100,101], axis=0)
+# big_grid_out = np.delete(big_grid_out, np.arange(49, big_grid_out.shape[0], 51), axis=0)
+# big_grid_out = np.delete(big_grid_out, np.arange(49, big_grid_out.shape[0], 51), axis=0)
+
+
 
 big_grid_out = big_grid_out - np.nanmin(big_grid_out)
 
@@ -72,7 +79,7 @@ plt.close()
 
 fig = plt.figure(figsize=(16, 16))
 ax = fig.add_subplot(111)
-contour = ax.contourf(X, Y, big_grid_out, levels=50, cmap='viridis')
+contour = ax.contourf(X, Y, big_grid_out, levels=25, cmap='viridis')
 ax.set_xlim([-2, 2])
 ax.set_ylim([-2, 2])
 plt.savefig("4_body_orbit_neighbour_similarity_contour.png", dpi=300)

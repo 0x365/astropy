@@ -30,7 +30,7 @@ def hu_moments_similarity(line1, line2):
 
 
 
-w = 1
+
 
 comb_items = [["-2.0", "-1.5"], ["-1.5", "-1.0"], ["-1.0", "-0.5"], ["-0.5", "0.0"], ["0.0", "0.5"], ["0.5", "1.0"], ["1.0", "1.5"], ["1.5", "2.0"]]
 
@@ -56,7 +56,7 @@ for pair in pairs:
 fig = plt.figure(figsize=(15,15), layout="constrained")
 
 big_grid_out = np.full((401,401), np.nan)
-
+w = 2
 counter = 0
 for xv0, xv1, yv0, yv1 in zip(xv0_li, xv1_li, yv0_li, yv1_li):
     try:
@@ -69,7 +69,7 @@ for xv0, xv1, yv0, yv1 in zip(xv0_li, xv1_li, yv0_li, yv1_li):
                 summer = []
                 
                 for k, neighbour in enumerate(neighbours):
-                    if k != 4:
+                    if (w == 1 and k != 4) or (w == 2 and k !=12):
                         setter = [
                             hu_moments_similarity(grid[i,j,:,0:2], neighbour[:,0:2]),
                             hu_moments_similarity(grid[i,j,:,2:4], neighbour[:,2:4]),
